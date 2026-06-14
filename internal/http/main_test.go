@@ -145,7 +145,7 @@ func (c *apiClient) do(method, path string, body any) (*http.Response, []byte) {
 // signupUser registers a user and stores the returned access token on the client.
 func (c *apiClient) signupUser(email, name, password string) {
 	c.t.Helper()
-	resp, body := c.do("POST", "/api/v1/auth/signup", map[string]string{
+	resp, body := c.do("POST", "/v1/auth/signup", map[string]string{
 		"email": email, "name": name, "password": password,
 	})
 	if resp.StatusCode != http.StatusCreated {
@@ -157,15 +157,31 @@ func (c *apiClient) signupUser(email, name, password string) {
 func accessTokenFrom(t *testing.T, body []byte) string {
 	t.Helper()
 	var out struct {
-		AccessToken string `json:"access_token"`
+		Data struct {
+			AccessToken string `json:"access_token"`
+		} `json:"data"`
 	}
 	if err := json.Unmarshal(body, &out); err != nil {
 		t.Fatalf("decode access token: %v (body=%s)", err, body)
 	}
-	if out.AccessToken == "" {
+	if out.Data.AccessToken == "" {
 		t.Fatalf("empty access token (body=%s)", body)
 	}
-	return out.AccessToken
+	return out.Data.AccessToken
+}
+
+// decodeData unmarshals the "data" field of a success envelope into dst.
+func decodeData(t *testing.T, body []byte, dst any) {
+	t.Helper()
+	var env struct {
+		Data json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(body, &env); err != nil {
+		t.Fatalf("decode envelope: %v (body=%s)", err, body)
+	}
+	if err := json.Unmarshal(env.Data, dst); err != nil {
+		t.Fatalf("decode data: %v (body=%s)", err, body)
+	}
 }
 
 func mustStatus(t *testing.T, resp *http.Response, body []byte, want int) {

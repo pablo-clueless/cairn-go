@@ -52,7 +52,7 @@ func (s *Server) Router() http.Handler {
 	// Interactive API docs at /swagger/index.html
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	r.Route("/api/v1", func(r chi.Router) {
+	r.Route("/v1", func(r chi.Router) {
 		r.Get("/health", s.handleHealth)
 
 		r.Route("/auth", func(r chi.Router) {
@@ -64,17 +64,13 @@ func (s *Server) Router() http.Handler {
 			// SSO (Google / Microsoft)
 			r.Get("/oauth/{provider}", s.handleOAuthLogin)
 			r.Get("/oauth/{provider}/callback", s.handleOAuthCallback)
-
-			r.Group(func(r chi.Router) {
-				r.Use(s.authenticate)
-				r.Get("/me", s.handleMe)
-			})
 		})
 
 		// Authenticated, org-scoped routes.
 		r.Group(func(r chi.Router) {
 			r.Use(s.authenticate)
 
+			r.Get("/me", s.handleMe)
 			r.Post("/invitations/accept", s.handleAcceptInvite)
 
 			r.Route("/orgs", func(r chi.Router) {

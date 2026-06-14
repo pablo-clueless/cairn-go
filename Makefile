@@ -1,6 +1,6 @@
 .PHONY: run build tidy test fmt vet docs docker-up docker-down
 
-run:        ## Run the API server
+dev:        ## Run the API server
 	go run ./cmd/api
 
 docs:       ## Regenerate Swagger docs into ./docs (requires: go install github.com/swaggo/swag/cmd/swag@latest)

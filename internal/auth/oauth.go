@@ -41,7 +41,7 @@ type OAuth struct {
 // when its client id and secret are present.
 func NewOAuth(cfg config.Config) *OAuth {
 	o := &OAuth{providers: map[string]oauthProvider{}}
-	base := cfg.AppBaseURL + "/api/v1/auth/oauth/"
+	base := cfg.AppBaseURL + "/v1/auth/oauth/"
 
 	if cfg.OAuth.GoogleClientID != "" && cfg.OAuth.GoogleClientSecret != "" {
 		o.providers[ProviderGoogle] = oauthProvider{

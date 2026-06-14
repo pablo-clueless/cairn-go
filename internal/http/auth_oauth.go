@@ -35,7 +35,7 @@ func (s *Server) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     oauthStateCookie,
 		Value:    state,
-		Path:     "/api/v1/auth/oauth",
+		Path:     "/v1/auth/oauth",
 		MaxAge:   600,
 		HttpOnly: true,
 		Secure:   s.cfg.CookieSecure,
@@ -57,8 +57,8 @@ func (s *Server) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 //	@Router		/auth/oauth/{provider}/callback [get]
 func (s *Server) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	provider := chi.URLParam(r, "provider")
-	redirectFail := s.cfg.FrontendURL + "/auth/callback?status=error"
-	redirectOK := s.cfg.FrontendURL + "/auth/callback?status=success"
+	redirectFail := s.cfg.FrontendURL + "/?error=sso"
+	redirectOK := s.cfg.FrontendURL + "/dashboard"
 
 	if !s.oauth.Enabled(provider) {
 		http.Redirect(w, r, redirectFail, http.StatusFound)
@@ -96,8 +96,8 @@ func (s *Server) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set the refresh cookie; the SPA calls /auth/refresh to obtain an access token.
-	s.setRefreshCookie(w, pair)
+	// Set both auth cookies; the SPA revalidates via GET /v1/me on landing.
+	s.setAuthCookies(w, pair)
 	http.Redirect(w, r, redirectOK, http.StatusFound)
 }
 
@@ -105,7 +105,7 @@ func (s *Server) clearOAuthState(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     oauthStateCookie,
 		Value:    "",
-		Path:     "/api/v1/auth/oauth",
+		Path:     "/v1/auth/oauth",
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   s.cfg.CookieSecure,

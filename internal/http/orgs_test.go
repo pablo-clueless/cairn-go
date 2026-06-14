@@ -1,7 +1,6 @@
 package http_test
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -16,34 +15,32 @@ func TestOrgLifecycleAndTenancy(t *testing.T) {
 	bob.signupUser("bob@example.com", "Bob", "supersecret123")
 
 	// Alice creates an org.
-	resp, body := alice.do("POST", "/api/v1/orgs", map[string]string{"name": "Acme Inc"})
+	resp, body := alice.do("POST", "/v1/orgs", map[string]string{"name": "Acme Inc"})
 	mustStatus(t, resp, body, http.StatusCreated)
 	var org struct {
 		ID   string `json:"id"`
 		Slug string `json:"slug"`
 	}
-	if err := json.Unmarshal(body, &org); err != nil {
-		t.Fatalf("decode org: %v", err)
-	}
+	decodeData(t, body, &org)
 	if org.ID == "" || org.Slug == "" {
 		t.Fatalf("expected id and slug, got %s", body)
 	}
 
 	// Alice lists her orgs -> 1.
-	resp, body = alice.do("GET", "/api/v1/orgs", nil)
+	resp, body = alice.do("GET", "/v1/orgs", nil)
 	mustStatus(t, resp, body, http.StatusOK)
 	var orgs []map[string]any
-	json.Unmarshal(body, &orgs)
+	decodeData(t, body, &orgs)
 	if len(orgs) != 1 {
 		t.Fatalf("expected 1 org, got %d", len(orgs))
 	}
 
 	// Bob (non-member) cannot see the org -> 404 (no existence leak).
-	resp, body = bob.do("GET", "/api/v1/orgs/"+org.ID, nil)
+	resp, body = bob.do("GET", "/v1/orgs/"+org.ID, nil)
 	mustStatus(t, resp, body, http.StatusNotFound)
 
 	// Alice sees the org with her role.
-	resp, body = alice.do("GET", "/api/v1/orgs/"+org.ID, nil)
+	resp, body = alice.do("GET", "/v1/orgs/"+org.ID, nil)
 	mustStatus(t, resp, body, http.StatusOK)
 	if !strings.Contains(string(body), `"role":"owner"`) {
 		t.Fatalf("expected owner role, got %s", body)
@@ -59,19 +56,19 @@ func TestInviteAcceptAndRBAC(t *testing.T) {
 	bob.signupUser("bob@example.com", "Bob", "supersecret123")
 
 	// Alice creates an org.
-	resp, body := alice.do("POST", "/api/v1/orgs", map[string]string{"name": "Acme Inc"})
+	resp, body := alice.do("POST", "/v1/orgs", map[string]string{"name": "Acme Inc"})
 	mustStatus(t, resp, body, http.StatusCreated)
 	orgID := jsonField(t, body, "id")
 
 	// Alice invites Bob; capture the accept token from the returned URL.
-	resp, body = alice.do("POST", "/api/v1/orgs/"+orgID+"/invitations", map[string]string{
+	resp, body = alice.do("POST", "/v1/orgs/"+orgID+"/invitations", map[string]string{
 		"email": "bob@example.com", "role": "member",
 	})
 	mustStatus(t, resp, body, http.StatusCreated)
 	var inv struct {
 		AcceptURL string `json:"accept_url"`
 	}
-	json.Unmarshal(body, &inv)
+	decodeData(t, body, &inv)
 	parts := strings.Split(inv.AcceptURL, "token=")
 	if len(parts) != 2 || parts[1] == "" {
 		t.Fatalf("could not extract token from %q", inv.AcceptURL)
@@ -79,30 +76,30 @@ func TestInviteAcceptAndRBAC(t *testing.T) {
 	token := parts[1]
 
 	// Duplicate invite -> 409.
-	resp, body = alice.do("POST", "/api/v1/orgs/"+orgID+"/invitations", map[string]string{
+	resp, body = alice.do("POST", "/v1/orgs/"+orgID+"/invitations", map[string]string{
 		"email": "bob@example.com", "role": "member",
 	})
 	mustStatus(t, resp, body, http.StatusConflict)
 
 	// Bob accepts -> 200, joins org.
-	resp, body = bob.do("POST", "/api/v1/invitations/accept", map[string]string{"token": token})
+	resp, body = bob.do("POST", "/v1/invitations/accept", map[string]string{"token": token})
 	mustStatus(t, resp, body, http.StatusOK)
 
 	// Members now number 2.
-	resp, body = alice.do("GET", "/api/v1/orgs/"+orgID+"/members", nil)
+	resp, body = alice.do("GET", "/v1/orgs/"+orgID+"/members", nil)
 	mustStatus(t, resp, body, http.StatusOK)
 	var members []struct {
 		UserID string `json:"user_id"`
 		Email  string `json:"email"`
 		Role   string `json:"role"`
 	}
-	json.Unmarshal(body, &members)
+	decodeData(t, body, &members)
 	if len(members) != 2 {
 		t.Fatalf("expected 2 members, got %d (%s)", len(members), body)
 	}
 
 	// Bob (member) cannot invite -> 403.
-	resp, body = bob.do("POST", "/api/v1/orgs/"+orgID+"/invitations", map[string]string{
+	resp, body = bob.do("POST", "/v1/orgs/"+orgID+"/invitations", map[string]string{
 		"email": "carol@example.com", "role": "member",
 	})
 	mustStatus(t, resp, body, http.StatusForbidden)
@@ -119,11 +116,11 @@ func TestInviteAcceptAndRBAC(t *testing.T) {
 	}
 
 	// Alice promotes Bob to admin -> 204.
-	resp, body = alice.do("PATCH", "/api/v1/orgs/"+orgID+"/members/"+bobID, map[string]string{"role": "admin"})
+	resp, body = alice.do("PATCH", "/v1/orgs/"+orgID+"/members/"+bobID, map[string]string{"role": "admin"})
 	mustStatus(t, resp, body, http.StatusNoContent)
 
 	// Removing the last owner (Alice) is blocked -> 400.
-	resp, body = alice.do("DELETE", "/api/v1/orgs/"+orgID+"/members/"+aliceID, nil)
+	resp, body = alice.do("DELETE", "/v1/orgs/"+orgID+"/members/"+aliceID, nil)
 	mustStatus(t, resp, body, http.StatusBadRequest)
 }
 
@@ -135,31 +132,30 @@ func TestAcceptInviteEmailMismatch(t *testing.T) {
 	mallory := newClient(t, srv.URL)
 	mallory.signupUser("mallory@example.com", "Mallory", "supersecret123")
 
-	resp, body := alice.do("POST", "/api/v1/orgs", map[string]string{"name": "Acme Inc"})
+	resp, body := alice.do("POST", "/v1/orgs", map[string]string{"name": "Acme Inc"})
 	mustStatus(t, resp, body, http.StatusCreated)
 	orgID := jsonField(t, body, "id")
 
-	resp, body = alice.do("POST", "/api/v1/orgs/"+orgID+"/invitations", map[string]string{
+	resp, body = alice.do("POST", "/v1/orgs/"+orgID+"/invitations", map[string]string{
 		"email": "bob@example.com", "role": "member",
 	})
 	mustStatus(t, resp, body, http.StatusCreated)
 	var inv struct {
 		AcceptURL string `json:"accept_url"`
 	}
-	json.Unmarshal(body, &inv)
+	decodeData(t, body, &inv)
 	token := strings.Split(inv.AcceptURL, "token=")[1]
 
 	// Mallory holds the link but it was issued to bob@ -> 403.
-	resp, body = mallory.do("POST", "/api/v1/invitations/accept", map[string]string{"token": token})
+	resp, body = mallory.do("POST", "/v1/invitations/accept", map[string]string{"token": token})
 	mustStatus(t, resp, body, http.StatusForbidden)
 }
 
+// jsonField reads a string field from the "data" object of a success envelope.
 func jsonField(t *testing.T, body []byte, field string) string {
 	t.Helper()
 	var m map[string]any
-	if err := json.Unmarshal(body, &m); err != nil {
-		t.Fatalf("decode json: %v", err)
-	}
+	decodeData(t, body, &m)
 	v, ok := m[field].(string)
 	if !ok {
 		t.Fatalf("field %q not found in %s", field, body)

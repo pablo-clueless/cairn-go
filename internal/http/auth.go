@@ -10,10 +10,12 @@ import (
 	"cairn/internal/model"
 )
 
-const refreshCookieName = "cairn_refresh"
-
-// refreshCookiePath scopes the refresh cookie to the auth endpoints only.
-const refreshCookiePath = "/api/v1/auth"
+const (
+	accessCookieName  = "access_token"
+	refreshCookieName = "refresh_token"
+	// refreshCookiePath scopes the refresh cookie to the auth endpoints only.
+	refreshCookiePath = "/v1/auth"
+)
 
 type signupRequest struct {
 	Email    string `json:"email"`
@@ -75,8 +77,8 @@ func (s *Server) handleSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.setRefreshCookie(w, pair)
-	writeJSON(w, http.StatusCreated, authResponse{
+	s.setAuthCookies(w, pair)
+	respond(w, http.StatusCreated, authResponse{
 		AccessToken: pair.AccessToken,
 		ExpiresAt:   pair.AccessExpiresAt,
 		User:        toUserDTO(user),
@@ -115,8 +117,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.setRefreshCookie(w, pair)
-	writeJSON(w, http.StatusOK, authResponse{
+	s.setAuthCookies(w, pair)
+	respond(w, http.StatusOK, authResponse{
 		AccessToken: pair.AccessToken,
 		ExpiresAt:   pair.AccessExpiresAt,
 		User:        toUserDTO(user),
@@ -141,13 +143,13 @@ func (s *Server) handleRefresh(w http.ResponseWriter, r *http.Request) {
 
 	user, pair, err := s.auth.Refresh(r.Context(), cookie.Value, r.UserAgent())
 	if err != nil {
-		s.clearRefreshCookie(w)
+		s.clearAuthCookies(w)
 		writeError(w, http.StatusUnauthorized, "unauthorized", "invalid or expired refresh token")
 		return
 	}
 
-	s.setRefreshCookie(w, pair)
-	writeJSON(w, http.StatusOK, authResponse{
+	s.setAuthCookies(w, pair)
+	respond(w, http.StatusOK, authResponse{
 		AccessToken: pair.AccessToken,
 		ExpiresAt:   pair.AccessExpiresAt,
 		User:        toUserDTO(user),
@@ -165,7 +167,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie(refreshCookieName); err == nil {
 		_ = s.auth.Logout(r.Context(), cookie.Value)
 	}
-	s.clearRefreshCookie(w)
+	s.clearAuthCookies(w)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -177,17 +179,28 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 //	@Security	BearerAuth
 //	@Success	200	{object}	userDTO
 //	@Failure	401	{object}	errorEnvelope
-//	@Router		/auth/me [get]
+//	@Router		/me [get]
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "not authenticated")
 		return
 	}
-	writeJSON(w, http.StatusOK, toUserDTO(user))
+	respond(w, http.StatusOK, toUserDTO(user))
 }
 
-func (s *Server) setRefreshCookie(w http.ResponseWriter, pair *auth.TokenPair) {
+// setAuthCookies sets the httpOnly access (path /) and refresh (path /v1/auth)
+// cookies. The frontend reads neither directly; both ride automatically.
+func (s *Server) setAuthCookies(w http.ResponseWriter, pair *auth.TokenPair) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     accessCookieName,
+		Value:    pair.AccessToken,
+		Path:     "/",
+		Expires:  pair.AccessExpiresAt,
+		HttpOnly: true,
+		Secure:   s.cfg.CookieSecure,
+		SameSite: http.SameSiteLaxMode,
+	})
 	http.SetCookie(w, &http.Cookie{
 		Name:     refreshCookieName,
 		Value:    pair.RefreshToken,
@@ -199,15 +212,15 @@ func (s *Server) setRefreshCookie(w http.ResponseWriter, pair *auth.TokenPair) {
 	})
 }
 
-func (s *Server) clearRefreshCookie(w http.ResponseWriter) {
+// clearAuthCookies expires both auth cookies.
+func (s *Server) clearAuthCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     refreshCookieName,
-		Value:    "",
-		Path:     refreshCookiePath,
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   s.cfg.CookieSecure,
-		SameSite: http.SameSiteLaxMode,
+		Name: accessCookieName, Value: "", Path: "/", MaxAge: -1,
+		HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name: refreshCookieName, Value: "", Path: refreshCookiePath, MaxAge: -1,
+		HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteLaxMode,
 	})
 }
 

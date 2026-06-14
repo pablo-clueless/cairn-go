@@ -29,5 +29,5 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusServiceUnavailable
 	}
 
-	writeJSON(w, status, resp)
+	respond(w, status, resp)
 }

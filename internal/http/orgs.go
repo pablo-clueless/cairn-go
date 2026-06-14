@@ -51,7 +51,7 @@ func (s *Server) handleCreateOrg(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal_error", "could not create organization")
 		return
 	}
-	writeJSON(w, http.StatusCreated, organization)
+	respond(w, http.StatusCreated, organization)
 }
 
 // handleListOrgs lists the organizations the caller belongs to.
@@ -72,7 +72,7 @@ func (s *Server) handleListOrgs(w http.ResponseWriter, r *http.Request) {
 	if orgs == nil {
 		orgs = []model.Organization{}
 	}
-	writeJSON(w, http.StatusOK, orgs)
+	respond(w, http.StatusOK, orgs)
 }
 
 // handleGetOrg returns a single organization the caller belongs to.
@@ -90,7 +90,7 @@ func (s *Server) handleGetOrg(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, orgWithRole{Organization: scope.Org, Role: scope.Role})
+	respond(w, http.StatusOK, orgWithRole{Organization: scope.Org, Role: scope.Role})
 }
 
 // handleUpdateOrg updates organization fields (admin+).
@@ -129,7 +129,7 @@ func (s *Server) handleUpdateOrg(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal_error", "could not update organization")
 		return
 	}
-	writeJSON(w, http.StatusOK, updated)
+	respond(w, http.StatusOK, updated)
 }
 
 // handleListMembers lists an organization's members.
@@ -154,7 +154,7 @@ func (s *Server) handleListMembers(w http.ResponseWriter, r *http.Request) {
 	if members == nil {
 		members = []model.Member{}
 	}
-	writeJSON(w, http.StatusOK, members)
+	respond(w, http.StatusOK, members)
 }
 
 type updateRoleRequest struct {
@@ -331,13 +331,13 @@ func (s *Server) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 		}
 		// Invite may be persisted even if email failed; report the partial result.
 		if result != nil {
-			writeJSON(w, http.StatusCreated, inviteResponse{Invitation: result.Invitation, AcceptURL: result.AcceptURL})
+			respond(w, http.StatusCreated, inviteResponse{Invitation: result.Invitation, AcceptURL: result.AcceptURL})
 			return
 		}
 		writeError(w, http.StatusBadRequest, "invite_failed", err.Error())
 		return
 	}
-	writeJSON(w, http.StatusCreated, inviteResponse{Invitation: result.Invitation, AcceptURL: result.AcceptURL})
+	respond(w, http.StatusCreated, inviteResponse{Invitation: result.Invitation, AcceptURL: result.AcceptURL})
 }
 
 // handleListInvites lists pending invitations (admin+).
@@ -365,7 +365,7 @@ func (s *Server) handleListInvites(w http.ResponseWriter, r *http.Request) {
 	if invs == nil {
 		invs = []model.Invitation{}
 	}
-	writeJSON(w, http.StatusOK, invs)
+	respond(w, http.StatusOK, invs)
 }
 
 // handleDeleteInvite revokes a pending invitation (admin+).
@@ -435,5 +435,5 @@ func (s *Server) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	writeJSON(w, http.StatusOK, organization)
+	respond(w, http.StatusOK, organization)
 }

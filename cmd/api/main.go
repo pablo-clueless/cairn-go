@@ -24,7 +24,7 @@ import (
 //	@version		0.1.0
 //	@description	Organization-wide project & issue tracking API (Jira-class, org-scoped).
 //	@host			localhost:8000
-//	@BasePath		/api/v1
+//	@BasePath		/v1
 
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
