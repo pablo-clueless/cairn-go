@@ -1,0 +1,19 @@
+# Env / secrets
+.env
+.env.local
+*.env
+
+# Build output
+/bin/
+/tmp/
+cairn
+cairn.exe
+
+# Go
+*.test
+*.out
+coverage.*
+
+# OS / editor
+.DS_Store
+.idea/
