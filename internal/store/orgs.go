@@ -116,6 +116,25 @@ func (db *DB) ListOrganizationsForUser(ctx context.Context, userID string) ([]mo
 	return orgs, rows.Err()
 }
 
+// ListAllOrganizations returns every organization (platform-admin use).
+func (db *DB) ListAllOrganizations(ctx context.Context) ([]model.Organization, error) {
+	rows, err := db.Pool.Query(ctx, `SELECT `+orgColumns+` FROM organizations ORDER BY created_at`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list all orgs: %w", err)
+	}
+	defer rows.Close()
+
+	var orgs []model.Organization
+	for rows.Next() {
+		var o model.Organization
+		if err := rows.Scan(&o.ID, &o.Name, &o.Slug, &o.CreatedBy, &o.CreatedAt, &o.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("store: scan org: %w", err)
+		}
+		orgs = append(orgs, o)
+	}
+	return orgs, rows.Err()
+}
+
 func prefixedOrgColumns(alias string) string {
 	return alias + ".id::text, " + alias + ".name, " + alias + ".slug, " +
 		alias + ".created_by::text, " + alias + ".created_at, " + alias + ".updated_at"

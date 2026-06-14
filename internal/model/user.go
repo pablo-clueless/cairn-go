@@ -4,12 +4,13 @@ import "time"
 
 // User is an authenticated person. PasswordHash is never serialized.
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	Name         string    `json:"name"`
-	PasswordHash string    `json:"-"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID              string    `json:"id"`
+	Email           string    `json:"email"`
+	Name            string    `json:"name"`
+	PasswordHash    string    `json:"-"`
+	IsPlatformAdmin bool      `json:"is_platform_admin"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 // RefreshToken is a persisted, hashed refresh credential used to mint new

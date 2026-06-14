@@ -65,6 +65,14 @@ func run() error {
 	}
 	slog.Info("migrations applied")
 
+	// Bootstrap platform admins from configuration (idempotent).
+	if err := db.SetPlatformAdminByEmails(ctx, cfg.PlatformAdminEmails); err != nil {
+		return err
+	}
+	if len(cfg.PlatformAdminEmails) > 0 {
+		slog.Info("platform admins synced", "count", len(cfg.PlatformAdminEmails))
+	}
+
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           httpapi.NewServer(db, cfg).Router(),

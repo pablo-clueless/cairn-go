@@ -34,8 +34,8 @@ func testConfig() config.Config {
 	return config.Config{
 		Env:             "test",
 		Port:            "0",
-		CORSOrigin:      "http://localhost:3000",
-		FrontendURL:     "http://localhost:3000",
+		CORSOrigin:      "http://localhost:3001",
+		FrontendURL:     "http://localhost:3001",
 		AppBaseURL:      "http://localhost:8000",
 		JWTSecret:       "test-secret-key-for-integration-tests-0123456789",
 		AccessTokenTTL:  15 * time.Minute,
@@ -45,9 +45,16 @@ func testConfig() config.Config {
 	}
 }
 
-// newTestServer spins up the full HTTP stack against an isolated Postgres
-// schema, which is dropped on cleanup. Tests are skipped when no DB is set.
+// newTestServer spins up the full HTTP stack and returns just the server.
 func newTestServer(t *testing.T) *httptest.Server {
+	srv, _ := newTestEnv(t)
+	return srv
+}
+
+// newTestEnv spins up the full HTTP stack against an isolated Postgres schema
+// (dropped on cleanup) and returns the server plus the store for direct setup.
+// Tests are skipped when no DB is set.
+func newTestEnv(t *testing.T) (*httptest.Server, *store.DB) {
 	t.Helper()
 
 	url := testDatabaseURL()
@@ -95,7 +102,7 @@ func newTestServer(t *testing.T) *httptest.Server {
 			a.Close(ctx)
 		}
 	})
-	return srv
+	return srv, db
 }
 
 // apiClient is a cookie-aware test HTTP client with a bearer token.

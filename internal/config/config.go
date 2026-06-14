@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -27,6 +28,10 @@ type Config struct {
 
 	// Organizations
 	InviteTTL time.Duration
+
+	// Billing
+	PlatformAdminEmails      []string // bootstrapped as platform admins at startup
+	DefaultPricePerSeatCents int
 
 	// SSO
 	OAuth OAuthConfig
@@ -56,7 +61,7 @@ func Load() (Config, error) {
 		Env:         getEnv("APP_ENV", "development"),
 		Port:        getEnv("PORT", "8000"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
-		CORSOrigin:  getEnv("CORS_ORIGIN", "http://localhost:3000"),
+		CORSOrigin:  getEnv("CORS_ORIGIN", "http://localhost:3001"),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -107,7 +112,40 @@ func Load() (Config, error) {
 		MicrosoftTenant:       getEnv("MICROSOFT_TENANT", "common"),
 	}
 
+	cfg.PlatformAdminEmails = parseEmails(os.Getenv("PLATFORM_ADMIN_EMAILS"))
+	cfg.DefaultPricePerSeatCents, err = getInt("DEFAULT_PRICE_PER_SEAT_CENTS", 1200)
+	if err != nil {
+		return cfg, err
+	}
+
 	return cfg, nil
+}
+
+// parseEmails splits a comma-separated list into lowercased, trimmed emails.
+func parseEmails(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	emails := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if e := strings.ToLower(strings.TrimSpace(p)); e != "" {
+			emails = append(emails, e)
+		}
+	}
+	return emails
+}
+
+func getInt(key string, fallback int) (int, error) {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("config: invalid %s: %w", key, err)
+	}
+	return n, nil
 }
 
 func getDuration(key string, fallback time.Duration) (time.Duration, error) {

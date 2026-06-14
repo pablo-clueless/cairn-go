@@ -81,8 +81,8 @@ func TestInviteAcceptAndRBAC(t *testing.T) {
 	})
 	mustStatus(t, resp, body, http.StatusConflict)
 
-	// Bob accepts -> 200, joins org.
-	resp, body = bob.do("POST", "/v1/invitations/accept", map[string]string{"token": token})
+	// Bob accepts -> 200, joins org (PATCH the invitation by token).
+	resp, body = bob.do("PATCH", "/v1/invitations/"+token, map[string]string{"status": "accepted"})
 	mustStatus(t, resp, body, http.StatusOK)
 
 	// Members now number 2.
@@ -147,7 +147,7 @@ func TestAcceptInviteEmailMismatch(t *testing.T) {
 	token := strings.Split(inv.AcceptURL, "token=")[1]
 
 	// Mallory holds the link but it was issued to bob@ -> 403.
-	resp, body = mallory.do("POST", "/v1/invitations/accept", map[string]string{"token": token})
+	resp, body = mallory.do("PATCH", "/v1/invitations/"+token, map[string]string{"status": "accepted"})
 	mustStatus(t, resp, body, http.StatusForbidden)
 }
 

@@ -100,6 +100,18 @@ func (db *DB) DeleteMembership(ctx context.Context, orgID, userID string) error 
 	return nil
 }
 
+// CountMembers returns the number of members (seats) in an organization.
+func (db *DB) CountMembers(ctx context.Context, orgID string) (int, error) {
+	var n int
+	err := db.Pool.QueryRow(ctx,
+		`SELECT count(*) FROM memberships WHERE organization_id = $1::uuid`, orgID,
+	).Scan(&n)
+	if err != nil {
+		return 0, fmt.Errorf("store: count members: %w", err)
+	}
+	return n, nil
+}
+
 // CountOwners returns the number of owners in an organization (to protect the last owner).
 func (db *DB) CountOwners(ctx context.Context, orgID string) (int, error) {
 	var n int

@@ -29,10 +29,11 @@ type loginRequest struct {
 }
 
 type userDTO struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              string    `json:"id"`
+	Email           string    `json:"email"`
+	Name            string    `json:"name"`
+	IsPlatformAdmin bool      `json:"is_platform_admin"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type authResponse struct {
@@ -42,7 +43,13 @@ type authResponse struct {
 }
 
 func toUserDTO(u *model.User) userDTO {
-	return userDTO{ID: u.ID, Email: u.Email, Name: u.Name, CreatedAt: u.CreatedAt}
+	return userDTO{
+		ID:              u.ID,
+		Email:           u.Email,
+		Name:            u.Name,
+		IsPlatformAdmin: u.IsPlatformAdmin,
+		CreatedAt:       u.CreatedAt,
+	}
 }
 
 // handleSignup registers a new user and returns an access token.

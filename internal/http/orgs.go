@@ -15,6 +15,9 @@ import (
 
 type createOrgRequest struct {
 	Name string `json:"name"`
+	// BillingEnabled starts a subscription/trial for the org. Honored only when
+	// the creator is a platform admin; ignored otherwise.
+	BillingEnabled *bool `json:"billing_enabled"`
 }
 
 type orgWithRole struct {
@@ -51,6 +54,15 @@ func (s *Server) handleCreateOrg(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal_error", "could not create organization")
 		return
 	}
+
+	// Billing is enabled at creation only by platform admins; everyone else
+	// gets an inactive subscription that an admin can turn on later.
+	billingEnabled := user.IsPlatformAdmin && req.BillingEnabled != nil && *req.BillingEnabled
+	if _, err := s.billing.InitializeForOrg(r.Context(), organization.ID, billingEnabled); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "organization created but billing setup failed")
+		return
+	}
+
 	respond(w, http.StatusCreated, organization)
 }
 
@@ -399,31 +411,38 @@ func (s *Server) handleDeleteInvite(w http.ResponseWriter, r *http.Request) {
 }
 
 type acceptInviteRequest struct {
-	Token string `json:"token"`
+	Status string `json:"status"` // must be "accepted"
 }
 
-// handleAcceptInvite joins the authenticated user to an org via an invite token.
+// handleAcceptInvite joins the authenticated user to an org by updating the
+// invitation (identified by its opaque token) to the "accepted" state.
 //
 //	@Summary	Accept an invitation
 //	@Tags		invitations
 //	@Accept		json
 //	@Produce	json
 //	@Security	BearerAuth
-//	@Param		body	body		acceptInviteRequest	true	"Invite token"
+//	@Param		token	path		string				true	"Invitation token"
+//	@Param		body	body		acceptInviteRequest	true	"Set status to accepted"
 //	@Success	200		{object}	model.Organization
 //	@Failure	400		{object}	errorEnvelope
 //	@Failure	403		{object}	errorEnvelope
-//	@Router		/invitations/accept [post]
+//	@Router		/invitations/{token} [patch]
 func (s *Server) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 	user, _ := userFromContext(r.Context())
+	token := chi.URLParam(r, "token")
 
 	var req acceptInviteRequest
 	if err := decodeJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_body", "could not parse request body")
 		return
 	}
+	if req.Status != "accepted" {
+		writeError(w, http.StatusBadRequest, "validation_error", `status must be "accepted"`)
+		return
+	}
 
-	organization, err := s.orgs.Accept(r.Context(), user, req.Token)
+	organization, err := s.orgs.Accept(r.Context(), user, token)
 	if err != nil {
 		switch {
 		case errors.Is(err, org.ErrInvalidInvitation):

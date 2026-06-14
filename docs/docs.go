@@ -15,6 +15,138 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/orgs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List all organizations (admin)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/cairn_internal_billing.AdminOrgItem"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/orgs/{orgID}/subscription": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update an org subscription (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Subscription changes",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http.updateSubscriptionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cairn_internal_billing.View"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/settings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get platform settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http.appSettingsDTO"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update platform settings",
+                "parameters": [
+                    {
+                        "description": "Settings",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http.updateSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http.appSettingsDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "consumes": [
@@ -210,8 +342,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/invitations/accept": {
-            "post": {
+        "/invitations/{token}": {
+            "patch": {
                 "security": [
                     {
                         "BearerAuth": []
@@ -229,7 +361,14 @@ const docTemplate = `{
                 "summary": "Accept an invitation",
                 "parameters": [
                     {
-                        "description": "Invite token",
+                        "type": "string",
+                        "description": "Invitation token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Set status to accepted",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -706,9 +845,112 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/orgs/{orgID}/subscription": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "billing"
+                ],
+                "summary": "Get organization subscription",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cairn_internal_billing.View"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "cairn_internal_billing.AdminOrgItem": {
+            "type": "object",
+            "properties": {
+                "organization": {
+                    "$ref": "#/definitions/cairn_internal_model.Organization"
+                },
+                "subscription": {
+                    "$ref": "#/definitions/cairn_internal_billing.View"
+                }
+            }
+        },
+        "cairn_internal_billing.View": {
+            "type": "object",
+            "properties": {
+                "amount_due_cents": {
+                    "type": "integer"
+                },
+                "billing_enabled": {
+                    "type": "boolean"
+                },
+                "canceled_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "current_period_end": {
+                    "type": "string"
+                },
+                "current_period_start": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "string"
+                },
+                "plan": {
+                    "type": "string"
+                },
+                "price_per_seat_cents": {
+                    "type": "integer"
+                },
+                "seats": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "trial_days": {
+                    "type": "integer"
+                },
+                "trial_days_remaining": {
+                    "type": "integer"
+                },
+                "trial_ends_at": {
+                    "type": "string"
+                },
+                "trial_expired": {
+                    "type": "boolean"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "cairn_internal_model.Invitation": {
             "type": "object",
             "properties": {
@@ -784,7 +1026,19 @@ const docTemplate = `{
         "internal_http.acceptInviteRequest": {
             "type": "object",
             "properties": {
-                "token": {
+                "status": {
+                    "description": "must be \"accepted\"",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http.appSettingsDTO": {
+            "type": "object",
+            "properties": {
+                "default_trial_days": {
+                    "type": "integer"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -806,6 +1060,10 @@ const docTemplate = `{
         "internal_http.createOrgRequest": {
             "type": "object",
             "properties": {
+                "billing_enabled": {
+                    "description": "BillingEnabled starts a subscription/trial for the org. Honored only when\nthe creator is a platform admin; ignored otherwise.",
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 }
@@ -909,6 +1167,34 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_http.updateSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "default_trial_days": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_http.updateSubscriptionRequest": {
+            "type": "object",
+            "properties": {
+                "billing_enabled": {
+                    "type": "boolean"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "price_per_seat_cents": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "trial_days": {
+                    "type": "integer"
+                }
+            }
+        },
         "internal_http.userDTO": {
             "type": "object",
             "properties": {
@@ -920,6 +1206,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "is_platform_admin": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"

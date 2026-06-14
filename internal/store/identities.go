@@ -18,7 +18,7 @@ func (db *DB) CreateUserSSO(ctx context.Context, email, name string) (*model.Use
 		VALUES ($1, $2)
 		RETURNING `+userColumns,
 		email, name,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.CreatedAt, &u.UpdatedAt)
+	).Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.IsPlatformAdmin, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("store: create sso user: %w", err)
 	}
@@ -34,7 +34,7 @@ func (db *DB) GetUserByIdentity(ctx context.Context, provider, providerUserID st
 		JOIN users u ON u.id = i.user_id
 		WHERE i.provider = $1 AND i.provider_user_id = $2`,
 		provider, providerUserID,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.CreatedAt, &u.UpdatedAt)
+	).Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.IsPlatformAdmin, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
@@ -63,5 +63,6 @@ func (db *DB) LinkIdentity(ctx context.Context, userID, provider, providerUserID
 func prefixedUserColumns(alias string) string {
 	return alias + ".id::text, " + alias + ".email, " + alias + ".name, " +
 		"coalesce(" + alias + ".password_hash, '') AS password_hash, " +
+		alias + ".is_platform_admin, " +
 		alias + ".created_at, " + alias + ".updated_at"
 }
