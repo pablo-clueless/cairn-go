@@ -14,6 +14,7 @@ import (
 	"cairn/internal/email"
 	"cairn/internal/org"
 	"cairn/internal/store"
+	"cairn/internal/work"
 )
 
 // Server holds shared dependencies for HTTP handlers.
@@ -24,6 +25,7 @@ type Server struct {
 	oauth   *auth.OAuth
 	orgs    *org.Service
 	billing *billing.Service
+	work    *work.Service
 }
 
 // NewServer constructs a Server with its dependencies.
@@ -35,7 +37,8 @@ func NewServer(db *store.DB, cfg config.Config) *Server {
 		auth:    auth.NewService(db, cfg),
 		oauth:   auth.NewOAuth(cfg),
 		orgs:    org.NewService(db, mailer, cfg.FrontendURL, cfg.InviteTTL),
-		billing: billing.NewService(db, cfg.DefaultPricePerSeatCents),
+		billing: billing.NewService(db, cfg.DefaultPricePerSeatCents, cfg.DefaultCurrency),
+		work:    work.NewService(db),
 	}
 }
 
@@ -95,6 +98,30 @@ func (s *Server) Router() http.Handler {
 					r.Delete("/invitations/{inviteID}", s.handleDeleteInvite)
 
 					r.Get("/subscription", s.handleGetSubscription)
+
+					// Spaces (projects) & issues
+					r.Get("/spaces", s.handleListSpaces)
+					r.Post("/spaces", s.handleCreateSpace)
+					r.Get("/spaces/{spaceKey}", s.handleGetSpace)
+					r.Patch("/spaces/{spaceKey}", s.handleUpdateSpace)
+					r.Delete("/spaces/{spaceKey}", s.handleDeleteSpace)
+					r.Post("/spaces/{spaceKey}/issues", s.handleCreateIssue)
+
+					r.Get("/spaces/{spaceKey}/statuses", s.handleListStatuses)
+					r.Post("/spaces/{spaceKey}/statuses", s.handleCreateStatus)
+					r.Patch("/statuses/{statusID}", s.handleUpdateStatus)
+					r.Delete("/statuses/{statusID}", s.handleDeleteStatus)
+
+					r.Get("/spaces/{spaceKey}/sprints", s.handleListSprints)
+					r.Post("/spaces/{spaceKey}/sprints", s.handleCreateSprint)
+					r.Get("/sprints/{sprintID}", s.handleGetSprint)
+					r.Patch("/sprints/{sprintID}", s.handleUpdateSprint)
+					r.Delete("/sprints/{sprintID}", s.handleDeleteSprint)
+
+					r.Get("/issues", s.handleListIssues)
+					r.Get("/issues/{issueKey}", s.handleGetIssue)
+					r.Patch("/issues/{issueKey}", s.handleUpdateIssue)
+					r.Delete("/issues/{issueKey}", s.handleDeleteIssue)
 				})
 			})
 

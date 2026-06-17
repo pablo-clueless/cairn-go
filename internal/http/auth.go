@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -33,6 +34,7 @@ type userDTO struct {
 	Email           string    `json:"email"`
 	Name            string    `json:"name"`
 	IsPlatformAdmin bool      `json:"is_platform_admin"`
+	DefaultOrgSlug  string    `json:"default_org_slug"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 
@@ -42,12 +44,18 @@ type authResponse struct {
 	User        userDTO   `json:"user"`
 }
 
-func toUserDTO(u *model.User) userDTO {
+// userDTO builds the user response, resolving the user's default org slug.
+func (s *Server) userDTO(ctx context.Context, u *model.User) userDTO {
+	slug, err := s.db.DefaultOrgSlugForUser(ctx, u.ID)
+	if err != nil {
+		slug = "" // non-fatal: omit default org rather than fail the request
+	}
 	return userDTO{
 		ID:              u.ID,
 		Email:           u.Email,
 		Name:            u.Name,
 		IsPlatformAdmin: u.IsPlatformAdmin,
+		DefaultOrgSlug:  slug,
 		CreatedAt:       u.CreatedAt,
 	}
 }
@@ -88,7 +96,7 @@ func (s *Server) handleSignup(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusCreated, authResponse{
 		AccessToken: pair.AccessToken,
 		ExpiresAt:   pair.AccessExpiresAt,
-		User:        toUserDTO(user),
+		User:        s.userDTO(r.Context(), user),
 	})
 }
 
@@ -128,7 +136,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, authResponse{
 		AccessToken: pair.AccessToken,
 		ExpiresAt:   pair.AccessExpiresAt,
-		User:        toUserDTO(user),
+		User:        s.userDTO(r.Context(), user),
 	})
 }
 
@@ -159,7 +167,7 @@ func (s *Server) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, authResponse{
 		AccessToken: pair.AccessToken,
 		ExpiresAt:   pair.AccessExpiresAt,
-		User:        toUserDTO(user),
+		User:        s.userDTO(r.Context(), user),
 	})
 }
 
@@ -193,7 +201,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "not authenticated")
 		return
 	}
-	respond(w, http.StatusOK, toUserDTO(user))
+	respond(w, http.StatusOK, s.userDTO(r.Context(), user))
 }
 
 // setAuthCookies sets the httpOnly access (path /) and refresh (path /v1/auth)

@@ -60,6 +60,43 @@ func (db *DB) GetOrganizationByID(ctx context.Context, id string) (*model.Organi
 	return org, nil
 }
 
+// DefaultOrgSlugForUser returns the slug of the user's first organization (by
+// join time), or "" if they belong to none.
+func (db *DB) DefaultOrgSlugForUser(ctx context.Context, userID string) (string, error) {
+	var slug string
+	err := db.Pool.QueryRow(ctx, `
+		SELECT o.slug
+		FROM organizations o
+		JOIN memberships m ON m.organization_id = o.id
+		WHERE m.user_id = $1::uuid
+		ORDER BY m.created_at
+		LIMIT 1`, userID,
+	).Scan(&slug)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", fmt.Errorf("store: default org slug: %w", err)
+	}
+	return slug, nil
+}
+
+// GetOrganizationByIDOrSlug resolves an org by its UUID or its slug. This lets
+// org-scoped URLs use the human-friendly slug. ErrNotFound if absent.
+func (db *DB) GetOrganizationByIDOrSlug(ctx context.Context, idOrSlug string) (*model.Organization, error) {
+	org := &model.Organization{}
+	err := db.Pool.QueryRow(ctx,
+		`SELECT `+orgColumns+` FROM organizations WHERE slug = $1 OR id::text = $1 LIMIT 1`, idOrSlug,
+	).Scan(&org.ID, &org.Name, &org.Slug, &org.CreatedBy, &org.CreatedAt, &org.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("store: get org by id or slug: %w", err)
+	}
+	return org, nil
+}
+
 // SlugExists reports whether an organization slug is taken.
 func (db *DB) SlugExists(ctx context.Context, slug string) (bool, error) {
 	var exists bool

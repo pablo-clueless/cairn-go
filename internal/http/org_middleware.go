@@ -22,7 +22,7 @@ func (s *Server) orgContext(next http.Handler) http.Handler {
 		}
 
 		orgID := chi.URLParam(r, "orgID")
-		org, err := s.db.GetOrganizationByID(r.Context(), orgID)
+		org, err := s.db.GetOrganizationByIDOrSlug(r.Context(), orgID)
 		if err != nil {
 			// Treat unknown/invalid ids as not found to avoid leaking existence.
 			writeError(w, http.StatusNotFound, "not_found", "organization not found")

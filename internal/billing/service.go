@@ -36,11 +36,15 @@ const defaultPeriod = 30 * 24 * time.Hour
 type Service struct {
 	store             *store.DB
 	defaultPriceCents int
+	defaultCurrency   string
 }
 
 // NewService builds a billing Service.
-func NewService(db *store.DB, defaultPriceCents int) *Service {
-	return &Service{store: db, defaultPriceCents: defaultPriceCents}
+func NewService(db *store.DB, defaultPriceCents int, defaultCurrency string) *Service {
+	if defaultCurrency == "" {
+		defaultCurrency = "NGN"
+	}
+	return &Service{store: db, defaultPriceCents: defaultPriceCents, defaultCurrency: defaultCurrency}
 }
 
 // View is a subscription plus derived, per-seat fields.
@@ -65,7 +69,7 @@ func (s *Service) InitializeForOrg(ctx context.Context, orgID string, billingEna
 		BillingEnabled:    billingEnabled,
 		Plan:              "per_seat",
 		PricePerSeatCents: s.defaultPriceCents,
-		Currency:          "USD",
+		Currency:          s.defaultCurrency,
 		TrialDays:         settings.DefaultTrialDays,
 		Status:            model.SubInactive,
 	}

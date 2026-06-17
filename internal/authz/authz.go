@@ -15,6 +15,17 @@ const (
 	ActionMemberInvite     Action = "member:invite"
 	ActionMemberRemove     Action = "member:remove"
 	ActionMemberRoleUpdate Action = "member:role:update"
+
+	// Work (spaces & issues)
+	ActionWorkView     Action = "work:view"
+	ActionSpaceCreate  Action = "space:create"
+	ActionSpaceUpdate  Action = "space:update"
+	ActionSpaceDelete  Action = "space:delete"
+	ActionIssueCreate  Action = "issue:create"
+	ActionIssueUpdate  Action = "issue:update"
+	ActionIssueDelete  Action = "issue:delete"
+	ActionSprintManage Action = "sprint:manage"
+	ActionStatusManage Action = "status:manage"
 )
 
 // roleRank orders roles from least to most privileged.
@@ -33,6 +44,16 @@ var minRank = map[Action]int{
 	ActionMemberRoleUpdate: roleRank[model.RoleAdmin],
 	ActionOrgUpdate:        roleRank[model.RoleAdmin],
 	ActionOrgDelete:        roleRank[model.RoleOwner],
+
+	ActionWorkView:     roleRank[model.RoleGuest],
+	ActionSpaceCreate:  roleRank[model.RoleAdmin],
+	ActionSpaceUpdate:  roleRank[model.RoleAdmin],
+	ActionSpaceDelete:  roleRank[model.RoleAdmin],
+	ActionIssueCreate:  roleRank[model.RoleMember],
+	ActionIssueUpdate:  roleRank[model.RoleMember],
+	ActionIssueDelete:  roleRank[model.RoleAdmin],
+	ActionSprintManage: roleRank[model.RoleMember],
+	ActionStatusManage: roleRank[model.RoleAdmin],
 }
 
 // Can reports whether a role may perform an action.

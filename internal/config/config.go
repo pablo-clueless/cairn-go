@@ -32,6 +32,7 @@ type Config struct {
 	// Billing
 	PlatformAdminEmails      []string // bootstrapped as platform admins at startup
 	DefaultPricePerSeatCents int
+	DefaultCurrency          string
 
 	// SSO
 	OAuth OAuthConfig
@@ -117,6 +118,7 @@ func Load() (Config, error) {
 	if err != nil {
 		return cfg, err
 	}
+	cfg.DefaultCurrency = getEnv("DEFAULT_CURRENCY", "NGN")
 
 	return cfg, nil
 }
