@@ -23,6 +23,9 @@ var (
 	ErrInvalidInvitation = errors.New("org: invalid or expired invitation")
 	// ErrInvitationEmailMismatch is returned when the invite was for a different email.
 	ErrInvitationEmailMismatch = errors.New("org: invitation was issued to a different email")
+	// ErrPlatformAdmin is returned when a platform admin attempts to belong to an
+	// organization (create one, accept an invite, or be invited).
+	ErrPlatformAdmin = errors.New("org: platform admins cannot belong to an organization")
 )
 
 // Mailer sends invitation emails. Implemented by internal/email.Sender.
@@ -70,6 +73,13 @@ func (s *Service) Invite(ctx context.Context, org *model.Organization, inviterID
 		return nil, fmt.Errorf("org: a valid email is required")
 	}
 
+	// A platform admin cannot belong to an organization, so they cannot be invited.
+	if existing, err := s.store.GetUserByEmail(ctx, email); err == nil && existing.IsPlatformAdmin {
+		return nil, ErrPlatformAdmin
+	} else if err != nil && !errors.Is(err, store.ErrNotFound) {
+		return nil, err
+	}
+
 	rawToken, err := randomToken()
 	if err != nil {
 		return nil, err
@@ -94,6 +104,9 @@ func (s *Service) Invite(ctx context.Context, org *model.Organization, inviterID
 func (s *Service) Accept(ctx context.Context, user *model.User, rawToken string) (*model.Organization, error) {
 	if strings.TrimSpace(rawToken) == "" {
 		return nil, ErrInvalidInvitation
+	}
+	if user.IsPlatformAdmin {
+		return nil, ErrPlatformAdmin
 	}
 
 	inv, err := s.store.GetInvitationByTokenHash(ctx, hashToken(rawToken))

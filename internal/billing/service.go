@@ -184,6 +184,19 @@ func (s *Service) AdminList(ctx context.Context) ([]AdminOrgItem, error) {
 	return items, nil
 }
 
+// AdminGet returns a single organization with its subscription view.
+func (s *Service) AdminGet(ctx context.Context, orgID string) (*AdminOrgItem, error) {
+	org, err := s.store.GetOrganizationByID(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	view, err := s.Get(ctx, org.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &AdminOrgItem{Organization: *org, Subscription: view}, nil
+}
+
 // Settings returns the global settings.
 func (s *Service) Settings(ctx context.Context) (model.AppSettings, error) {
 	return s.store.GetSettings(ctx)

@@ -133,6 +133,7 @@ func (s *Server) Router() http.Handler {
 				r.Get("/admin/settings", s.handleGetSettings)
 				r.Patch("/admin/settings", s.handleUpdateSettings)
 				r.Get("/admin/orgs", s.handleAdminListOrgs)
+				r.Get("/admin/orgs/{orgID}", s.handleAdminGetOrg)
 				r.Patch("/admin/orgs/{orgID}/subscription", s.handleAdminUpdateSubscription)
 			})
 		})

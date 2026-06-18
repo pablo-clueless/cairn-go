@@ -39,6 +39,12 @@ type orgWithRole struct {
 func (s *Server) handleCreateOrg(w http.ResponseWriter, r *http.Request) {
 	user, _ := userFromContext(r.Context())
 
+	// A platform admin operates the platform and cannot belong to an org.
+	if user.IsPlatformAdmin {
+		writeError(w, http.StatusForbidden, "platform_admin", "platform admins cannot belong to an organization")
+		return
+	}
+
 	var req createOrgRequest
 	if err := decodeJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_body", "could not parse request body")
@@ -55,10 +61,9 @@ func (s *Server) handleCreateOrg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Billing is enabled at creation only by platform admins; everyone else
-	// gets an inactive subscription that an admin can turn on later.
-	billingEnabled := user.IsPlatformAdmin && req.BillingEnabled != nil && *req.BillingEnabled
-	if _, err := s.billing.InitializeForOrg(r.Context(), organization.ID, billingEnabled); err != nil {
+	// New orgs start with an inactive subscription; a platform admin enables
+	// billing later from the admin console.
+	if _, err := s.billing.InitializeForOrg(r.Context(), organization.ID, false); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "organization created but billing setup failed")
 		return
 	}
@@ -341,6 +346,10 @@ func (s *Server) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "invite_pending", "a pending invitation already exists for this email")
 			return
 		}
+		if errors.Is(err, org.ErrPlatformAdmin) {
+			writeError(w, http.StatusConflict, "platform_admin", "that email belongs to a platform admin and cannot join an organization")
+			return
+		}
 		// Invite may be persisted even if email failed; report the partial result.
 		if result != nil {
 			respond(w, http.StatusCreated, inviteResponse{Invitation: result.Invitation, AcceptURL: result.AcceptURL})
@@ -449,6 +458,8 @@ func (s *Server) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "invalid_invitation", "invalid or expired invitation")
 		case errors.Is(err, org.ErrInvitationEmailMismatch):
 			writeError(w, http.StatusForbidden, "email_mismatch", "this invitation was issued to a different email")
+		case errors.Is(err, org.ErrPlatformAdmin):
+			writeError(w, http.StatusForbidden, "platform_admin", "platform admins cannot belong to an organization")
 		default:
 			writeError(w, http.StatusInternalServerError, "internal_error", "could not accept invitation")
 		}

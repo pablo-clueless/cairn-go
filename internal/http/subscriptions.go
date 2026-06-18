@@ -107,6 +107,28 @@ func (s *Server) handleAdminListOrgs(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, items)
 }
 
+// handleAdminGetOrg returns one org with its subscription (platform admin).
+//
+//	@Summary	Get an org with subscription (admin)
+//	@Tags		admin
+//	@Produce	json
+//	@Security	BearerAuth
+//	@Param		orgID	path		string	true	"Organization ID"
+//	@Success	200		{object}	billing.AdminOrgItem
+//	@Router		/admin/orgs/{orgID} [get]
+func (s *Server) handleAdminGetOrg(w http.ResponseWriter, r *http.Request) {
+	item, err := s.billing.AdminGet(r.Context(), chi.URLParam(r, "orgID"))
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "organization not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "could not load organization")
+		return
+	}
+	respond(w, http.StatusOK, item)
+}
+
 type updateSubscriptionRequest struct {
 	BillingEnabled    *bool   `json:"billing_enabled"`
 	Status            *string `json:"status"`
