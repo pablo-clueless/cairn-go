@@ -17,3 +17,21 @@
 ### Code Conventions
 
 - the "/dashboard" path should be for platform admins only
+
+---
+
+## Session Learnings (2026-06-18 01:41)
+
+
+### Code Conventions
+
+- the status on the kanban should not be hardcoded, users should be able to add status and move issues to them
+
+---
+
+## Session Learnings (2026-06-20 15:47)
+
+
+### Code Conventions
+
+- we should be able to add status, and then select those status when creating a new issue

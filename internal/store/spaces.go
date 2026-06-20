@@ -46,18 +46,18 @@ func (db *DB) CreateSpace(ctx context.Context, orgID, key, name string, descript
 	}
 
 	defaults := []struct {
-		name, category string
-		position       int
+		name, category, color string
+		position              int
 	}{
-		{"To Do", "todo", 0},
-		{"In Progress", "in_progress", 1},
-		{"Done", "done", 2},
+		{"To Do", "todo", "#6B7280", 0},
+		{"In Progress", "in_progress", "#3B82F6", 1},
+		{"Done", "done", "#22C55E", 2},
 	}
 	for _, d := range defaults {
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO workflow_statuses (organization_id, space_id, name, category, position)
-			VALUES ($1::uuid, $2::uuid, $3, $4, $5)`,
-			orgID, spaceID, d.name, d.category, d.position,
+			INSERT INTO workflow_statuses (organization_id, space_id, name, category, color, position)
+			VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)`,
+			orgID, spaceID, d.name, d.category, d.color, d.position,
 		); err != nil {
 			return nil, fmt.Errorf("store: seed status: %w", err)
 		}

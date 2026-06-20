@@ -15,6 +15,7 @@ type createIssueRequest struct {
 	Type        string  `json:"type"`
 	Title       string  `json:"title"`
 	Description *string `json:"description"`
+	StatusID    *string `json:"status_id"`
 	Priority    string  `json:"priority"`
 	AssigneeID  *string `json:"assignee_id"`
 }
@@ -57,6 +58,7 @@ func (s *Server) handleCreateIssue(w http.ResponseWriter, r *http.Request) {
 		Type:        req.Type,
 		Title:       req.Title,
 		Description: req.Description,
+		StatusID:    req.StatusID,
 		Priority:    req.Priority,
 		AssigneeID:  req.AssigneeID,
 	})

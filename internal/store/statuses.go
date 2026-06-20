@@ -11,13 +11,23 @@ import (
 	"cairn/internal/model"
 )
 
-const statusColumns = `id::text, organization_id::text, space_id::text, name, category, position, created_at, updated_at`
+const statusColumns = `id::text, organization_id::text, space_id::text, name, category, color, position, created_at, updated_at`
 
 func scanStatus(row pgx.Row) (*model.WorkflowStatus, error) {
 	s := &model.WorkflowStatus{}
-	err := row.Scan(&s.ID, &s.OrganizationID, &s.SpaceID, &s.Name, &s.Category, &s.Position,
+	err := row.Scan(&s.ID, &s.OrganizationID, &s.SpaceID, &s.Name, &s.Category, &s.Color, &s.Position,
 		&s.CreatedAt, &s.UpdatedAt)
 	return s, err
+}
+
+// StatusPatch is a partial change to a single status applied in a bulk update.
+// Nil fields are left unchanged.
+type StatusPatch struct {
+	ID       string
+	Name     *string
+	Category *string
+	Color    *string
+	Position *int
 }
 
 // ListStatuses returns a space's workflow statuses in board order.
@@ -59,11 +69,11 @@ func (db *DB) GetStatus(ctx context.Context, orgID, id string) (*model.WorkflowS
 }
 
 // CreateStatus appends a status to a space. ErrStatusNameTaken on a dup name.
-func (db *DB) CreateStatus(ctx context.Context, orgID, spaceID, name, category string, position int) (*model.WorkflowStatus, error) {
+func (db *DB) CreateStatus(ctx context.Context, orgID, spaceID, name, category, color string, position int) (*model.WorkflowStatus, error) {
 	s, err := scanStatus(db.Pool.QueryRow(ctx, `
-		INSERT INTO workflow_statuses (organization_id, space_id, name, category, position)
-		VALUES ($1::uuid, $2::uuid, $3, $4, $5) RETURNING `+statusColumns,
-		orgID, spaceID, name, category, position,
+		INSERT INTO workflow_statuses (organization_id, space_id, name, category, color, position)
+		VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6) RETURNING `+statusColumns,
+		orgID, spaceID, name, category, color, position,
 	))
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -75,12 +85,12 @@ func (db *DB) CreateStatus(ctx context.Context, orgID, spaceID, name, category s
 	return s, nil
 }
 
-// UpdateStatus updates a status's name, category, and position.
-func (db *DB) UpdateStatus(ctx context.Context, orgID, id, name, category string, position int) (*model.WorkflowStatus, error) {
+// UpdateStatus updates a status's name, category, color, and position.
+func (db *DB) UpdateStatus(ctx context.Context, orgID, id, name, category, color string, position int) (*model.WorkflowStatus, error) {
 	s, err := scanStatus(db.Pool.QueryRow(ctx, `
-		UPDATE workflow_statuses SET name = $3, category = $4, position = $5, updated_at = now()
+		UPDATE workflow_statuses SET name = $3, category = $4, color = $5, position = $6, updated_at = now()
 		WHERE id = $1::uuid AND organization_id = $2::uuid RETURNING `+statusColumns,
-		id, orgID, name, category, position,
+		id, orgID, name, category, color, position,
 	))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -93,6 +103,67 @@ func (db *DB) UpdateStatus(ctx context.Context, orgID, id, name, category string
 		return nil, fmt.Errorf("store: update status: %w", err)
 	}
 	return s, nil
+}
+
+// BulkUpdateStatuses applies partial changes to several statuses of one space in
+// a single transaction (e.g. reordering columns, which moves multiple at once).
+// It returns the space's statuses in board order afterward.
+func (db *DB) BulkUpdateStatuses(ctx context.Context, orgID, spaceID string, patches []StatusPatch) ([]model.WorkflowStatus, error) {
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("store: begin bulk update statuses: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	for _, p := range patches {
+		tag, err := tx.Exec(ctx, `
+			UPDATE workflow_statuses SET
+				name     = COALESCE($4, name),
+				category = COALESCE($5, category),
+				color    = COALESCE($6, color),
+				position = COALESCE($7, position),
+				updated_at = now()
+			WHERE id = $1::uuid AND organization_id = $2::uuid AND space_id = $3::uuid`,
+			p.ID, orgID, spaceID, p.Name, p.Category, p.Color, p.Position,
+		)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				return nil, ErrStatusNameTaken
+			}
+			return nil, fmt.Errorf("store: bulk update status %s: %w", p.ID, err)
+		}
+		if tag.RowsAffected() == 0 {
+			return nil, ErrNotFound // an id that isn't a status of this space
+		}
+	}
+
+	rows, err := tx.Query(ctx,
+		`SELECT `+statusColumns+` FROM workflow_statuses
+		 WHERE organization_id = $1::uuid AND space_id = $2::uuid ORDER BY position, created_at`,
+		orgID, spaceID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("store: reload statuses: %w", err)
+	}
+	defer rows.Close()
+
+	var statuses []model.WorkflowStatus
+	for rows.Next() {
+		s, err := scanStatus(rows)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan status: %w", err)
+		}
+		statuses = append(statuses, *s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("store: commit bulk update statuses: %w", err)
+	}
+	return statuses, nil
 }
 
 // DeleteStatus removes a status. ErrStatusInUse if issues still reference it.

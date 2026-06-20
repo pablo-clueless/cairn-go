@@ -97,6 +97,7 @@ type CreateIssueInput struct {
 	Type        string
 	Title       string
 	Description *string
+	StatusID    *string // optional; defaults to the space's first workflow status
 	Priority    string
 	AssigneeID  *string
 }
@@ -123,10 +124,23 @@ func (s *Service) CreateIssue(ctx context.Context, orgID, actorID string, in Cre
 		return nil, err
 	}
 
-	// New issues start in the space's first workflow status.
-	statusID, err := s.store.DefaultStatusID(ctx, sp.ID)
-	if err != nil {
-		return nil, err
+	// New issues start in the space's first workflow status, unless the caller
+	// picked a specific status (which must belong to this space).
+	var statusID string
+	if in.StatusID != nil && strings.TrimSpace(*in.StatusID) != "" {
+		ok, err := s.store.StatusInSpace(ctx, *in.StatusID, sp.ID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("%w: status does not belong to this space", ErrValidation)
+		}
+		statusID = strings.TrimSpace(*in.StatusID)
+	} else {
+		statusID, err = s.store.DefaultStatusID(ctx, sp.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	issue, err := s.store.CreateIssue(ctx, orgID, sp.ID, statusID, in.Type, strings.TrimSpace(in.Title), in.Description, in.AssigneeID, in.Priority, actorID)

@@ -109,6 +109,7 @@ func (s *Server) Router() http.Handler {
 
 					r.Get("/spaces/{spaceKey}/statuses", s.handleListStatuses)
 					r.Post("/spaces/{spaceKey}/statuses", s.handleCreateStatus)
+					r.Patch("/spaces/{spaceKey}/statuses", s.handleBulkUpdateStatuses)
 					r.Patch("/statuses/{statusID}", s.handleUpdateStatus)
 					r.Delete("/statuses/{statusID}", s.handleDeleteStatus)
 

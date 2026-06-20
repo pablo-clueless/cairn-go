@@ -26,6 +26,7 @@ type WorkflowStatus struct {
 	SpaceID        string    `json:"space_id"`
 	Name           string    `json:"name"`
 	Category       string    `json:"category"`
+	Color          string    `json:"color"`
 	Position       int       `json:"position"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
