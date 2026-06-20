@@ -75,6 +75,8 @@ definitions:
         type: string
       description:
         type: string
+      due_date:
+        type: string
       id:
         type: string
       key:
@@ -193,6 +195,8 @@ definitions:
     properties:
       category:
         type: string
+      color:
+        type: string
       created_at:
         type: string
       id:
@@ -230,13 +234,37 @@ definitions:
       user:
         $ref: '#/definitions/internal_http.userDTO'
     type: object
+  internal_http.bulkUpdateStatusItem:
+    properties:
+      category:
+        type: string
+      color:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      position:
+        type: integer
+    type: object
+  internal_http.bulkUpdateStatusesRequest:
+    properties:
+      statuses:
+        items:
+          $ref: '#/definitions/internal_http.bulkUpdateStatusItem'
+        type: array
+    type: object
   internal_http.createIssueRequest:
     properties:
       assignee_id:
         type: string
       description:
         type: string
+      due_date:
+        type: string
       priority:
+        type: string
+      status_id:
         type: string
       title:
         type: string
@@ -278,6 +306,8 @@ definitions:
   internal_http.createStatusRequest:
     properties:
       category:
+        type: string
+      color:
         type: string
       name:
         type: string
@@ -346,6 +376,8 @@ definitions:
         type: string
       description:
         type: string
+      due_date:
+        type: string
       priority:
         type: string
       sprint_id:
@@ -392,6 +424,8 @@ definitions:
   internal_http.updateStatusRequest:
     properties:
       category:
+        type: string
+      color:
         type: string
       name:
         type: string
@@ -447,6 +481,26 @@ paths:
       security:
       - BearerAuth: []
       summary: List all organizations (admin)
+      tags:
+      - admin
+  /admin/orgs/{orgID}:
+    get:
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cairn_internal_billing.AdminOrgItem'
+      security:
+      - BearerAuth: []
+      summary: Get an org with subscription (admin)
       tags:
       - admin
   /admin/orgs/{orgID}/subscription:
@@ -1278,6 +1332,38 @@ paths:
       security:
       - BearerAuth: []
       summary: List workflow statuses
+      tags:
+      - statuses
+    patch:
+      description: Apply partial changes to several statuses of a space at once (e.g.
+        reorder columns). Each item is matched by id.
+      parameters:
+      - description: Organization ID or slug
+        in: path
+        name: orgID
+        required: true
+        type: string
+      - description: Space key
+        in: path
+        name: spaceKey
+        required: true
+        type: string
+      - description: Statuses to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http.bulkUpdateStatusesRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/cairn_internal_model.WorkflowStatus'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Bulk update workflow statuses
       tags:
       - statuses
     post:

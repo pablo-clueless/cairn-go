@@ -18,6 +18,7 @@ type createIssueRequest struct {
 	StatusID    *string `json:"status_id"`
 	Priority    string  `json:"priority"`
 	AssigneeID  *string `json:"assignee_id"`
+	DueDate     *string `json:"due_date"`
 }
 
 type updateIssueRequest struct {
@@ -28,16 +29,17 @@ type updateIssueRequest struct {
 	Priority    *string `json:"priority"`
 	AssigneeID  *string `json:"assignee_id"`
 	SprintID    *string `json:"sprint_id"`
+	DueDate     *string `json:"due_date"`
 }
 
-//	@Summary	Create issue
-//	@Tags		issues
-//	@Security	BearerAuth
-//	@Param		orgID		path		string				true	"Organization ID or slug"
-//	@Param		spaceKey	path		string				true	"Space key"
-//	@Param		body		body		createIssueRequest	true	"Issue"
-//	@Success	201			{object}	model.Issue
-//	@Router		/orgs/{orgID}/spaces/{spaceKey}/issues [post]
+// @Summary	Create issue
+// @Tags		issues
+// @Security	BearerAuth
+// @Param		orgID		path		string				true	"Organization ID or slug"
+// @Param		spaceKey	path		string				true	"Space key"
+// @Param		body		body		createIssueRequest	true	"Issue"
+// @Success	201			{object}	model.Issue
+// @Router		/orgs/{orgID}/spaces/{spaceKey}/issues [post]
 func (s *Server) handleCreateIssue(w http.ResponseWriter, r *http.Request) {
 	scope, ok := s.requireOrg(w, r)
 	if !ok {
@@ -61,6 +63,7 @@ func (s *Server) handleCreateIssue(w http.ResponseWriter, r *http.Request) {
 		StatusID:    req.StatusID,
 		Priority:    req.Priority,
 		AssigneeID:  req.AssigneeID,
+		DueDate:     req.DueDate,
 	})
 	if err != nil {
 		writeWorkError(w, err)
@@ -69,16 +72,16 @@ func (s *Server) handleCreateIssue(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusCreated, issue)
 }
 
-//	@Summary	List issues
-//	@Description	Org-wide issue list with optional filters: space (key), assignee ("me" or user id), status.
-//	@Tags		issues
-//	@Security	BearerAuth
-//	@Param		orgID		path	string	true	"Organization ID or slug"
-//	@Param		space		query	string	false	"Filter by space key"
-//	@Param		assignee	query	string	false	"Filter by assignee (me or user id)"
-//	@Param		status		query	string	false	"Filter by status"
-//	@Success	200			{array}	model.Issue
-//	@Router		/orgs/{orgID}/issues [get]
+// @Summary	List issues
+// @Description	Org-wide issue list with optional filters: space (key), assignee ("me" or user id), status.
+// @Tags		issues
+// @Security	BearerAuth
+// @Param		orgID		path	string	true	"Organization ID or slug"
+// @Param		space		query	string	false	"Filter by space key"
+// @Param		assignee	query	string	false	"Filter by assignee (me or user id)"
+// @Param		status		query	string	false	"Filter by status"
+// @Success	200			{array}	model.Issue
+// @Router		/orgs/{orgID}/issues [get]
 func (s *Server) handleListIssues(w http.ResponseWriter, r *http.Request) {
 	scope, ok := s.requireOrg(w, r)
 	if !ok {
@@ -121,13 +124,13 @@ func (s *Server) handleListIssues(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, issues)
 }
 
-//	@Summary	Get issue
-//	@Tags		issues
-//	@Security	BearerAuth
-//	@Param		orgID		path		string	true	"Organization ID or slug"
-//	@Param		issueKey	path		string	true	"Issue key, e.g. ENG-123"
-//	@Success	200			{object}	model.Issue
-//	@Router		/orgs/{orgID}/issues/{issueKey} [get]
+// @Summary	Get issue
+// @Tags		issues
+// @Security	BearerAuth
+// @Param		orgID		path		string	true	"Organization ID or slug"
+// @Param		issueKey	path		string	true	"Issue key, e.g. ENG-123"
+// @Success	200			{object}	model.Issue
+// @Router		/orgs/{orgID}/issues/{issueKey} [get]
 func (s *Server) handleGetIssue(w http.ResponseWriter, r *http.Request) {
 	scope, ok := s.requireOrg(w, r)
 	if !ok {
@@ -144,14 +147,14 @@ func (s *Server) handleGetIssue(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, issue)
 }
 
-//	@Summary	Update issue
-//	@Tags		issues
-//	@Security	BearerAuth
-//	@Param		orgID		path		string				true	"Organization ID or slug"
-//	@Param		issueKey	path		string				true	"Issue key, e.g. ENG-123"
-//	@Param		body		body		updateIssueRequest	true	"Fields to change (send empty assignee_id to unassign)"
-//	@Success	200			{object}	model.Issue
-//	@Router		/orgs/{orgID}/issues/{issueKey} [patch]
+// @Summary	Update issue
+// @Tags		issues
+// @Security	BearerAuth
+// @Param		orgID		path		string				true	"Organization ID or slug"
+// @Param		issueKey	path		string				true	"Issue key, e.g. ENG-123"
+// @Param		body		body		updateIssueRequest	true	"Fields to change (send empty assignee_id to unassign)"
+// @Success	200			{object}	model.Issue
+// @Router		/orgs/{orgID}/issues/{issueKey} [patch]
 func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
 	scope, ok := s.requireOrg(w, r)
 	if !ok {
@@ -175,6 +178,7 @@ func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
 		Priority:    req.Priority,
 		AssigneeID:  req.AssigneeID,
 		SprintID:    req.SprintID,
+		DueDate:     req.DueDate,
 	})
 	if err != nil {
 		writeWorkError(w, err)
@@ -183,13 +187,13 @@ func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, issue)
 }
 
-//	@Summary	Delete issue
-//	@Tags		issues
-//	@Security	BearerAuth
-//	@Param		orgID		path	string	true	"Organization ID or slug"
-//	@Param		issueKey	path	string	true	"Issue key, e.g. ENG-123"
-//	@Success	204
-//	@Router		/orgs/{orgID}/issues/{issueKey} [delete]
+// @Summary	Delete issue
+// @Tags		issues
+// @Security	BearerAuth
+// @Param		orgID		path	string	true	"Organization ID or slug"
+// @Param		issueKey	path	string	true	"Issue key, e.g. ENG-123"
+// @Success	204
+// @Router		/orgs/{orgID}/issues/{issueKey} [delete]
 func (s *Server) handleDeleteIssue(w http.ResponseWriter, r *http.Request) {
 	scope, ok := s.requireOrg(w, r)
 	if !ok {

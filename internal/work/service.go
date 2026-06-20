@@ -16,10 +16,10 @@ import (
 )
 
 var (
-	ErrSpaceKeyTaken  = errors.New("work: space key already in use")
-	ErrInvalidKey     = errors.New("work: key must be 2–10 chars, uppercase letters/digits, starting with a letter")
-	ErrInvalidIssue   = errors.New("work: invalid issue reference")
-	ErrValidation     = errors.New("work: validation failed")
+	ErrSpaceKeyTaken = errors.New("work: space key already in use")
+	ErrInvalidKey    = errors.New("work: key must be 2–10 chars, uppercase letters/digits, starting with a letter")
+	ErrInvalidIssue  = errors.New("work: invalid issue reference")
+	ErrValidation    = errors.New("work: validation failed")
 )
 
 var spaceKeyRe = regexp.MustCompile(`^[A-Z][A-Z0-9]{1,9}$`)
@@ -100,6 +100,7 @@ type CreateIssueInput struct {
 	StatusID    *string // optional; defaults to the space's first workflow status
 	Priority    string
 	AssigneeID  *string
+	DueDate     *string // optional YYYY-MM-DD; nil/"" means no due date
 }
 
 func (s *Service) CreateIssue(ctx context.Context, orgID, actorID string, in CreateIssueInput) (*model.Issue, error) {
@@ -143,7 +144,14 @@ func (s *Service) CreateIssue(ctx context.Context, orgID, actorID string, in Cre
 		}
 	}
 
-	issue, err := s.store.CreateIssue(ctx, orgID, sp.ID, statusID, in.Type, strings.TrimSpace(in.Title), in.Description, in.AssigneeID, in.Priority, actorID)
+	// An empty/blank due date is treated as "none" rather than an invalid date.
+	var dueDate *string
+	if in.DueDate != nil && strings.TrimSpace(*in.DueDate) != "" {
+		d := strings.TrimSpace(*in.DueDate)
+		dueDate = &d
+	}
+
+	issue, err := s.store.CreateIssue(ctx, orgID, sp.ID, statusID, in.Type, strings.TrimSpace(in.Title), in.Description, in.AssigneeID, in.Priority, actorID, dueDate)
 	if err != nil {
 		return nil, err
 	}

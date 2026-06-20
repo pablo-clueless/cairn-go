@@ -81,24 +81,25 @@ type Space struct {
 
 // Issue is a unit of work within a space. Key is derived as "<spaceKey>-<number>".
 type Issue struct {
-	ID             string    `json:"id"`
-	OrganizationID string    `json:"organization_id"`
-	SpaceID        string    `json:"space_id"`
-	SpaceKey       string    `json:"space_key"`
-	Number         int       `json:"number"`
-	Key            string    `json:"key"` // e.g. "ENG-123"
-	Type           string    `json:"type"`
-	Title          string    `json:"title"`
-	Description    *string   `json:"description,omitempty"`
-	StatusID       string    `json:"status_id"`
-	Status         string    `json:"status"`          // status name, e.g. "To Do"
-	StatusCategory string    `json:"status_category"` // todo | in_progress | done
-	Priority       string    `json:"priority"`
-	AssigneeID     *string   `json:"assignee_id,omitempty"`
-	AssigneeName   *string   `json:"assignee_name,omitempty"`
-	ReporterID     *string   `json:"reporter_id,omitempty"`
-	ReporterName   *string   `json:"reporter_name,omitempty"`
-	SprintID       *string   `json:"sprint_id,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID             string     `json:"id"`
+	OrganizationID string     `json:"organization_id"`
+	SpaceID        string     `json:"space_id"`
+	SpaceKey       string     `json:"space_key"`
+	Number         int        `json:"number"`
+	Key            string     `json:"key"` // e.g. "ENG-123"
+	Type           string     `json:"type"`
+	Title          string     `json:"title"`
+	Description    *string    `json:"description,omitempty"`
+	StatusID       string     `json:"status_id"`
+	Status         string     `json:"status"`          // status name, e.g. "To Do"
+	StatusCategory string     `json:"status_category"` // todo | in_progress | done
+	Priority       string     `json:"priority"`
+	AssigneeID     *string    `json:"assignee_id,omitempty"`
+	AssigneeName   *string    `json:"assignee_name,omitempty"`
+	ReporterID     *string    `json:"reporter_id,omitempty"`
+	ReporterName   *string    `json:"reporter_name,omitempty"`
+	SprintID       *string    `json:"sprint_id,omitempty"`
+	DueDate        *time.Time `json:"due_date,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }

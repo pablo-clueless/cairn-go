@@ -17,7 +17,7 @@ const issueSelect = `
 		(s.key || '-' || i.number) AS key, i.type, i.title, i.description,
 		i.status_id::text, st.name, st.category, i.priority,
 		i.assignee_id::text, ua.name, i.reporter_id::text, ur.name, i.sprint_id::text,
-		i.created_at, i.updated_at
+		i.due_date, i.created_at, i.updated_at
 	FROM issues i
 	JOIN spaces s ON s.id = i.space_id
 	JOIN workflow_statuses st ON st.id = i.status_id
@@ -29,12 +29,12 @@ func scanIssue(row pgx.Row) (*model.Issue, error) {
 	err := row.Scan(&is.ID, &is.OrganizationID, &is.SpaceID, &is.SpaceKey, &is.Number, &is.Key,
 		&is.Type, &is.Title, &is.Description, &is.StatusID, &is.Status, &is.StatusCategory, &is.Priority,
 		&is.AssigneeID, &is.AssigneeName, &is.ReporterID, &is.ReporterName, &is.SprintID,
-		&is.CreatedAt, &is.UpdatedAt)
+		&is.DueDate, &is.CreatedAt, &is.UpdatedAt)
 	return is, err
 }
 
 // CreateIssue allocates the next per-space number and inserts the issue atomically.
-func (db *DB) CreateIssue(ctx context.Context, orgID, spaceID, statusID, issueType, title string, description, assigneeID *string, priority, reporterID string) (*model.Issue, error) {
+func (db *DB) CreateIssue(ctx context.Context, orgID, spaceID, statusID, issueType, title string, description, assigneeID *string, priority, reporterID string, dueDate *string) (*model.Issue, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("store: begin create issue: %w", err)
@@ -56,10 +56,10 @@ func (db *DB) CreateIssue(ctx context.Context, orgID, spaceID, statusID, issueTy
 
 	var id string
 	err = tx.QueryRow(ctx, `
-		INSERT INTO issues (organization_id, space_id, number, status_id, type, title, description, priority, assignee_id, reporter_id)
-		VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5, $6, $7, $8, $9::uuid, $10::uuid)
+		INSERT INTO issues (organization_id, space_id, number, status_id, type, title, description, priority, assignee_id, reporter_id, due_date)
+		VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5, $6, $7, $8, $9::uuid, $10::uuid, $11::date)
 		RETURNING id::text`,
-		orgID, spaceID, number, statusID, issueType, title, description, priority, assigneeID, reporterID,
+		orgID, spaceID, number, statusID, issueType, title, description, priority, assigneeID, reporterID, dueDate,
 	).Scan(&id)
 	if err != nil {
 		return nil, fmt.Errorf("store: insert issue: %w", err)
@@ -161,6 +161,7 @@ type IssueUpdate struct {
 	Priority    *string
 	AssigneeID  *string
 	SprintID    *string // "" moves to backlog (NULL)
+	DueDate     *string // "" clears the due date (NULL); otherwise a YYYY-MM-DD date
 }
 
 // UpdateIssue applies a partial update and returns the updated issue.
@@ -199,6 +200,13 @@ func (db *DB) UpdateIssue(ctx context.Context, orgID, id string, u IssueUpdate) 
 			sets = append(sets, "sprint_id = NULL")
 		} else {
 			add("sprint_id", "::uuid", *u.SprintID)
+		}
+	}
+	if u.DueDate != nil {
+		if *u.DueDate == "" {
+			sets = append(sets, "due_date = NULL")
+		} else {
+			add("due_date", "::date", *u.DueDate)
 		}
 	}
 

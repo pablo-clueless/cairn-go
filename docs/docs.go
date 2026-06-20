@@ -42,6 +42,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/orgs/{orgID}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get an org with subscription (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cairn_internal_billing.AdminOrgItem"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/orgs/{orgID}/subscription": {
             "patch": {
                 "security": [
@@ -1406,6 +1439,54 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Apply partial changes to several statuses of a space at once (e.g. reorder columns). Each item is matched by id.",
+                "tags": [
+                    "statuses"
+                ],
+                "summary": "Bulk update workflow statuses",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID or slug",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Space key",
+                        "name": "spaceKey",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Statuses to update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http.bulkUpdateStatusesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/cairn_internal_model.WorkflowStatus"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/orgs/{orgID}/sprints/{sprintID}": {
@@ -1748,6 +1829,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "due_date": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -1926,6 +2010,9 @@ const docTemplate = `{
                 "category": {
                     "type": "string"
                 },
+                "color": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1983,6 +2070,37 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_http.bulkUpdateStatusItem": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "color": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_http.bulkUpdateStatusesRequest": {
+            "type": "object",
+            "properties": {
+                "statuses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_http.bulkUpdateStatusItem"
+                    }
+                }
+            }
+        },
         "internal_http.createIssueRequest": {
             "type": "object",
             "properties": {
@@ -1992,7 +2110,13 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "due_date": {
+                    "type": "string"
+                },
                 "priority": {
+                    "type": "string"
+                },
+                "status_id": {
                     "type": "string"
                 },
                 "title": {
@@ -2053,6 +2177,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
+                    "type": "string"
+                },
+                "color": {
                     "type": "string"
                 },
                 "name": {
@@ -2159,6 +2286,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "due_date": {
+                    "type": "string"
+                },
                 "priority": {
                     "type": "string"
                 },
@@ -2230,6 +2360,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
+                    "type": "string"
+                },
+                "color": {
                     "type": "string"
                 },
                 "name": {
