@@ -113,6 +113,9 @@ func (s *Server) Router() http.Handler {
 					r.Patch("/statuses/{statusID}", s.handleUpdateStatus)
 					r.Delete("/statuses/{statusID}", s.handleDeleteStatus)
 
+					r.Get("/spaces/{spaceKey}/transitions", s.handleListTransitions)
+					r.Put("/spaces/{spaceKey}/transitions", s.handleSetTransitions)
+
 					r.Get("/spaces/{spaceKey}/sprints", s.handleListSprints)
 					r.Post("/spaces/{spaceKey}/sprints", s.handleCreateSprint)
 					r.Get("/sprints/{sprintID}", s.handleGetSprint)
@@ -123,6 +126,13 @@ func (s *Server) Router() http.Handler {
 					r.Get("/issues/{issueKey}", s.handleGetIssue)
 					r.Patch("/issues/{issueKey}", s.handleUpdateIssue)
 					r.Delete("/issues/{issueKey}", s.handleDeleteIssue)
+
+					// Documents (space pages & live docs)
+					r.Get("/spaces/{spaceKey}/documents", s.handleListDocuments)
+					r.Post("/spaces/{spaceKey}/documents", s.handleCreateDocument)
+					r.Get("/documents/{docID}", s.handleGetDocument)
+					r.Patch("/documents/{docID}", s.handleUpdateDocument)
+					r.Delete("/documents/{docID}", s.handleDeleteDocument)
 				})
 			})
 

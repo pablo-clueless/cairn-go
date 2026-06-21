@@ -26,6 +26,11 @@ const (
 	ActionIssueDelete  Action = "issue:delete"
 	ActionSprintManage Action = "sprint:manage"
 	ActionStatusManage Action = "status:manage"
+
+	// Documents (space pages, live docs)
+	ActionDocumentCreate Action = "document:create"
+	ActionDocumentUpdate Action = "document:update"
+	ActionDocumentDelete Action = "document:delete"
 )
 
 // roleRank orders roles from least to most privileged.
@@ -54,6 +59,10 @@ var minRank = map[Action]int{
 	ActionIssueDelete:  roleRank[model.RoleAdmin],
 	ActionSprintManage: roleRank[model.RoleMember],
 	ActionStatusManage: roleRank[model.RoleAdmin],
+
+	ActionDocumentCreate: roleRank[model.RoleMember],
+	ActionDocumentUpdate: roleRank[model.RoleMember],
+	ActionDocumentDelete: roleRank[model.RoleMember],
 }
 
 // Can reports whether a role may perform an action.

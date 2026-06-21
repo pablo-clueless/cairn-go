@@ -32,6 +32,18 @@ type WorkflowStatus struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+// StatusTransition is an allowed issue status change within a space's workflow.
+// FromStatusID nil means "from any status" (a global transition). A space with
+// no transitions has an open workflow (any status may change to any other).
+type StatusTransition struct {
+	ID             string    `json:"id"`
+	OrganizationID string    `json:"organization_id"`
+	SpaceID        string    `json:"space_id"`
+	FromStatusID   *string   `json:"from_status_id"` // null = from any status
+	ToStatusID     string    `json:"to_status_id"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 // Issue priorities.
 const (
 	PriorityLowest  = "lowest"
@@ -104,4 +116,31 @@ type Issue struct {
 	DueDate        *time.Time `json:"due_date,omitempty"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
+}
+
+// Document types & statuses.
+const (
+	DocumentPage       = "page"
+	DocumentLive       = "live"
+	DocumentWhiteboard = "whiteboard"
+
+	DocumentDraft     = "draft"
+	DocumentPublished = "published"
+)
+
+// Document is a Confluence-style page or live doc within a space. Documents form
+// a tree via ParentID (nil = top-level). OwnerName is the creator's display name.
+type Document struct {
+	ID             string    `json:"id"`
+	OrganizationID string    `json:"organization_id"`
+	SpaceID        string    `json:"space_id"`
+	ParentID       *string   `json:"parent_id"`
+	Title          string    `json:"title"`
+	Type           string    `json:"type"`
+	Status         string    `json:"status"`
+	Content        string    `json:"content"`
+	OwnerID        *string   `json:"owner_id"`
+	OwnerName      *string   `json:"owner_name"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }

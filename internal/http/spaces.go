@@ -44,6 +44,8 @@ func writeWorkError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "active_sprint_exists", work.ErrActiveSprintExists.Error())
 	case errors.Is(err, work.ErrInvalidTransition):
 		writeError(w, http.StatusConflict, "invalid_transition", "invalid sprint status transition")
+	case errors.Is(err, work.ErrInvalidIssueTransition):
+		writeError(w, http.StatusConflict, "invalid_transition", "that status change isn't allowed by the workflow")
 	case errors.Is(err, work.ErrValidation):
 		writeError(w, http.StatusBadRequest, "validation_error", err.Error())
 	default:

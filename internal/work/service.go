@@ -194,6 +194,15 @@ func (s *Service) UpdateIssue(ctx context.Context, orgID, actorID, issueKey stri
 		if !ok {
 			return nil, fmt.Errorf("%w: status does not belong to this space", ErrValidation)
 		}
+		// Enforce the space's workflow: the transition from the issue's current
+		// status to the new one must be permitted (open workflows allow all).
+		allowed, err := s.store.TransitionAllowed(ctx, existing.SpaceID, existing.StatusID, *u.StatusID)
+		if err != nil {
+			return nil, err
+		}
+		if !allowed {
+			return nil, ErrInvalidIssueTransition
+		}
 	}
 	updated, err := s.store.UpdateIssue(ctx, orgID, existing.ID, u)
 	if err != nil {
