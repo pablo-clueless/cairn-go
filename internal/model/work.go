@@ -49,16 +49,18 @@ const (
 )
 
 // Sprint is a time-boxed set of issues within a space.
+// Nullable fields are emitted as JSON null (never omitted) so the response shape
+// is stable: every sprint object always carries the full set of keys.
 type Sprint struct {
 	ID             string     `json:"id"`
 	OrganizationID string     `json:"organization_id"`
 	SpaceID        string     `json:"space_id"`
 	Name           string     `json:"name"`
-	Goal           *string    `json:"goal,omitempty"`
+	Goal           *string    `json:"goal"`
 	Status         string     `json:"status"`
-	StartDate      *time.Time `json:"start_date,omitempty"`
-	EndDate        *time.Time `json:"end_date,omitempty"`
-	CompletedAt    *time.Time `json:"completed_at,omitempty"`
+	StartDate      *time.Time `json:"start_date"`
+	EndDate        *time.Time `json:"end_date"`
+	CompletedAt    *time.Time `json:"completed_at"`
 	IssueCount     int        `json:"issue_count"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
