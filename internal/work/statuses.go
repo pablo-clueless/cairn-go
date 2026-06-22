@@ -47,7 +47,7 @@ func (s *Service) CreateStatus(ctx context.Context, orgID, actorID, spaceKey, na
 }
 
 // UpdateStatus applies partial changes to a workflow status (rename, recategorize, recolor, reorder).
-func (s *Service) UpdateStatus(ctx context.Context, orgID, actorID, statusID string, name, category, color *string, position *int) (*model.WorkflowStatus, error) {
+func (s *Service) UpdateStatus(ctx context.Context, orgID, actorID, statusID string, name, category, color *string, position, wipLimit *int) (*model.WorkflowStatus, error) {
 	cur, err := s.store.GetStatus(ctx, orgID, statusID)
 	if err != nil {
 		return nil, err
@@ -75,8 +75,15 @@ func (s *Service) UpdateStatus(ctx context.Context, orgID, actorID, statusID str
 	if position != nil {
 		position2 = *position
 	}
+	wip2 := cur.WIPLimit
+	if wipLimit != nil {
+		if *wipLimit < 0 {
+			return nil, fmt.Errorf("%w: WIP limit cannot be negative", ErrValidation)
+		}
+		wip2 = *wipLimit
+	}
 
-	status, err := s.store.UpdateStatus(ctx, orgID, statusID, name2, category2, color2, position2)
+	status, err := s.store.UpdateStatus(ctx, orgID, statusID, name2, category2, color2, position2, wip2)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +98,7 @@ type StatusPatchInput struct {
 	Category *string
 	Color    *string
 	Position *int
+	WIPLimit *int
 }
 
 // BulkUpdateStatuses applies changes to multiple statuses of a space at once
@@ -110,7 +118,7 @@ func (s *Service) BulkUpdateStatuses(ctx context.Context, orgID, actorID, spaceK
 		if strings.TrimSpace(p.ID) == "" {
 			return nil, fmt.Errorf("%w: status id is required", ErrValidation)
 		}
-		patch := store.StatusPatch{ID: p.ID, Position: p.Position}
+		patch := store.StatusPatch{ID: p.ID, Position: p.Position, WIPLimit: p.WIPLimit}
 		if p.Name != nil {
 			n := strings.TrimSpace(*p.Name)
 			if n == "" {

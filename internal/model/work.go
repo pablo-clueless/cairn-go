@@ -28,6 +28,7 @@ type WorkflowStatus struct {
 	Category       string    `json:"category"`
 	Color          string    `json:"color"`
 	Position       int       `json:"position"`
+	WIPLimit       int       `json:"wip_limit"` // 0 = no limit
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
@@ -114,6 +115,7 @@ type Issue struct {
 	ReporterName   *string    `json:"reporter_name,omitempty"`
 	SprintID       *string    `json:"sprint_id,omitempty"`
 	DueDate        *time.Time `json:"due_date,omitempty"`
+	Rank           float64    `json:"rank"` // fractional sort key within the space
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 }

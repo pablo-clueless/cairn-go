@@ -115,6 +115,9 @@ definitions:
         type: string
       priority:
         type: string
+      rank:
+        description: fractional sort key within the space
+        type: number
       reporter_id:
         type: string
       reporter_name:
@@ -254,6 +257,9 @@ definitions:
         type: string
       updated_at:
         type: string
+      wip_limit:
+        description: 0 = no limit
+        type: integer
     type: object
   internal_http.acceptInviteRequest:
     properties:
@@ -288,6 +294,8 @@ definitions:
       name:
         type: string
       position:
+        type: integer
+      wip_limit:
         type: integer
     type: object
   internal_http.bulkUpdateStatusesRequest:
@@ -462,6 +470,8 @@ definitions:
         type: string
       priority:
         type: string
+      rank:
+        type: number
       sprint_id:
         type: string
       status_id:
@@ -512,6 +522,8 @@ definitions:
       name:
         type: string
       position:
+        type: integer
+      wip_limit:
         type: integer
     type: object
   internal_http.updateSubscriptionRequest:

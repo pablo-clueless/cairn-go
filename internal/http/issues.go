@@ -22,14 +22,15 @@ type createIssueRequest struct {
 }
 
 type updateIssueRequest struct {
-	Type        *string `json:"type"`
-	Title       *string `json:"title"`
-	Description *string `json:"description"`
-	StatusID    *string `json:"status_id"`
-	Priority    *string `json:"priority"`
-	AssigneeID  *string `json:"assignee_id"`
-	SprintID    *string `json:"sprint_id"`
-	DueDate     *string `json:"due_date"`
+	Type        *string  `json:"type"`
+	Title       *string  `json:"title"`
+	Description *string  `json:"description"`
+	StatusID    *string  `json:"status_id"`
+	Priority    *string  `json:"priority"`
+	AssigneeID  *string  `json:"assignee_id"`
+	SprintID    *string  `json:"sprint_id"`
+	DueDate     *string  `json:"due_date"`
+	Rank        *float64 `json:"rank"`
 }
 
 // @Summary	Create issue
@@ -179,6 +180,7 @@ func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
 		AssigneeID:  req.AssigneeID,
 		SprintID:    req.SprintID,
 		DueDate:     req.DueDate,
+		Rank:        req.Rank,
 	})
 	if err != nil {
 		writeWorkError(w, err)

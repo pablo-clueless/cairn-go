@@ -11,12 +11,12 @@ import (
 	"cairn/internal/model"
 )
 
-const statusColumns = `id::text, organization_id::text, space_id::text, name, category, color, position, created_at, updated_at`
+const statusColumns = `id::text, organization_id::text, space_id::text, name, category, color, position, wip_limit, created_at, updated_at`
 
 func scanStatus(row pgx.Row) (*model.WorkflowStatus, error) {
 	s := &model.WorkflowStatus{}
 	err := row.Scan(&s.ID, &s.OrganizationID, &s.SpaceID, &s.Name, &s.Category, &s.Color, &s.Position,
-		&s.CreatedAt, &s.UpdatedAt)
+		&s.WIPLimit, &s.CreatedAt, &s.UpdatedAt)
 	return s, err
 }
 
@@ -28,6 +28,7 @@ type StatusPatch struct {
 	Category *string
 	Color    *string
 	Position *int
+	WIPLimit *int
 }
 
 // ListStatuses returns a space's workflow statuses in board order.
@@ -85,12 +86,12 @@ func (db *DB) CreateStatus(ctx context.Context, orgID, spaceID, name, category, 
 	return s, nil
 }
 
-// UpdateStatus updates a status's name, category, color, and position.
-func (db *DB) UpdateStatus(ctx context.Context, orgID, id, name, category, color string, position int) (*model.WorkflowStatus, error) {
+// UpdateStatus updates a status's name, category, color, position, and WIP limit.
+func (db *DB) UpdateStatus(ctx context.Context, orgID, id, name, category, color string, position, wipLimit int) (*model.WorkflowStatus, error) {
 	s, err := scanStatus(db.Pool.QueryRow(ctx, `
-		UPDATE workflow_statuses SET name = $3, category = $4, color = $5, position = $6, updated_at = now()
+		UPDATE workflow_statuses SET name = $3, category = $4, color = $5, position = $6, wip_limit = $7, updated_at = now()
 		WHERE id = $1::uuid AND organization_id = $2::uuid RETURNING `+statusColumns,
-		id, orgID, name, category, color, position,
+		id, orgID, name, category, color, position, wipLimit,
 	))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -118,13 +119,14 @@ func (db *DB) BulkUpdateStatuses(ctx context.Context, orgID, spaceID string, pat
 	for _, p := range patches {
 		tag, err := tx.Exec(ctx, `
 			UPDATE workflow_statuses SET
-				name     = COALESCE($4, name),
-				category = COALESCE($5, category),
-				color    = COALESCE($6, color),
-				position = COALESCE($7, position),
+				name      = COALESCE($4, name),
+				category  = COALESCE($5, category),
+				color     = COALESCE($6, color),
+				position  = COALESCE($7, position),
+				wip_limit = COALESCE($8, wip_limit),
 				updated_at = now()
 			WHERE id = $1::uuid AND organization_id = $2::uuid AND space_id = $3::uuid`,
-			p.ID, orgID, spaceID, p.Name, p.Category, p.Color, p.Position,
+			p.ID, orgID, spaceID, p.Name, p.Category, p.Color, p.Position, p.WIPLimit,
 		)
 		if err != nil {
 			var pgErr *pgconn.PgError

@@ -1,5 +1,6 @@
--- 0011_documents: Confluence-style documents within a space (pages & live docs),
+-- 0014_documents: Confluence-style documents within a space (pages & live docs),
 -- arranged as a tree via self-referential parent_id.
+-- (Renumbered from 0011 to resolve a duplicate version with 0011_status_transitions.)
 
 CREATE TABLE documents (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

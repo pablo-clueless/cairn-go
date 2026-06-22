@@ -2169,6 +2169,10 @@
                 "priority": {
                     "type": "string"
                 },
+                "rank": {
+                    "description": "fractional sort key within the space",
+                    "type": "number"
+                },
                 "reporter_id": {
                     "type": "string"
                 },
@@ -2378,6 +2382,10 @@
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "wip_limit": {
+                    "description": "0 = no limit",
+                    "type": "integer"
                 }
             }
         },
@@ -2431,6 +2439,9 @@
                     "type": "string"
                 },
                 "position": {
+                    "type": "integer"
+                },
+                "wip_limit": {
                     "type": "integer"
                 }
             }
@@ -2697,6 +2708,9 @@
                 "priority": {
                     "type": "string"
                 },
+                "rank": {
+                    "type": "number"
+                },
                 "sprint_id": {
                     "type": "string"
                 },
@@ -2774,6 +2788,9 @@
                     "type": "string"
                 },
                 "position": {
+                    "type": "integer"
+                },
+                "wip_limit": {
                     "type": "integer"
                 }
             }

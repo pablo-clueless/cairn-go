@@ -21,6 +21,7 @@ type updateStatusRequest struct {
 	Category *string `json:"category"`
 	Color    *string `json:"color"`
 	Position *int    `json:"position"`
+	WIPLimit *int    `json:"wip_limit"`
 }
 
 // bulkUpdateStatusesRequest carries partial changes to several statuses at once
@@ -31,6 +32,7 @@ type bulkUpdateStatusItem struct {
 	Category *string `json:"category"`
 	Color    *string `json:"color"`
 	Position *int    `json:"position"`
+	WIPLimit *int    `json:"wip_limit"`
 }
 
 type bulkUpdateStatusesRequest struct {
@@ -127,6 +129,7 @@ func (s *Server) handleBulkUpdateStatuses(w http.ResponseWriter, r *http.Request
 			Category: it.Category,
 			Color:    it.Color,
 			Position: it.Position,
+			WIPLimit: it.WIPLimit,
 		}
 	}
 
@@ -164,7 +167,7 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_body", "could not parse request body")
 		return
 	}
-	status, err := s.work.UpdateStatus(r.Context(), scope.Org.ID, user.ID, chi.URLParam(r, "statusID"), req.Name, req.Category, req.Color, req.Position)
+	status, err := s.work.UpdateStatus(r.Context(), scope.Org.ID, user.ID, chi.URLParam(r, "statusID"), req.Name, req.Category, req.Color, req.Position, req.WIPLimit)
 	if err != nil {
 		writeWorkError(w, err)
 		return

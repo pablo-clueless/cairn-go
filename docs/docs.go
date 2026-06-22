@@ -2175,6 +2175,10 @@ const docTemplate = `{
                 "priority": {
                     "type": "string"
                 },
+                "rank": {
+                    "description": "fractional sort key within the space",
+                    "type": "number"
+                },
                 "reporter_id": {
                     "type": "string"
                 },
@@ -2384,6 +2388,10 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "wip_limit": {
+                    "description": "0 = no limit",
+                    "type": "integer"
                 }
             }
         },
@@ -2437,6 +2445,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "position": {
+                    "type": "integer"
+                },
+                "wip_limit": {
                     "type": "integer"
                 }
             }
@@ -2703,6 +2714,9 @@ const docTemplate = `{
                 "priority": {
                     "type": "string"
                 },
+                "rank": {
+                    "type": "number"
+                },
                 "sprint_id": {
                     "type": "string"
                 },
@@ -2780,6 +2794,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "position": {
+                    "type": "integer"
+                },
+                "wip_limit": {
                     "type": "integer"
                 }
             }

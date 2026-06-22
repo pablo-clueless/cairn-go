@@ -17,7 +17,7 @@ const issueSelect = `
 		(s.key || '-' || i.number) AS key, i.type, i.title, i.description,
 		i.status_id::text, st.name, st.category, i.priority,
 		i.assignee_id::text, ua.name, i.reporter_id::text, ur.name, i.sprint_id::text,
-		i.due_date, i.created_at, i.updated_at
+		i.due_date, i.rank, i.created_at, i.updated_at
 	FROM issues i
 	JOIN spaces s ON s.id = i.space_id
 	JOIN workflow_statuses st ON st.id = i.status_id
@@ -29,7 +29,7 @@ func scanIssue(row pgx.Row) (*model.Issue, error) {
 	err := row.Scan(&is.ID, &is.OrganizationID, &is.SpaceID, &is.SpaceKey, &is.Number, &is.Key,
 		&is.Type, &is.Title, &is.Description, &is.StatusID, &is.Status, &is.StatusCategory, &is.Priority,
 		&is.AssigneeID, &is.AssigneeName, &is.ReporterID, &is.ReporterName, &is.SprintID,
-		&is.DueDate, &is.CreatedAt, &is.UpdatedAt)
+		&is.DueDate, &is.Rank, &is.CreatedAt, &is.UpdatedAt)
 	return is, err
 }
 
@@ -54,12 +54,20 @@ func (db *DB) CreateIssue(ctx context.Context, orgID, spaceID, statusID, issueTy
 		return nil, fmt.Errorf("store: allocate issue number: %w", err)
 	}
 
+	// New issues sort to the bottom of the space: one rank step past the current max.
+	var rank float64
+	if err := tx.QueryRow(ctx,
+		`SELECT COALESCE(MAX(rank), 0) + 1024 FROM issues WHERE space_id = $1::uuid`, spaceID,
+	).Scan(&rank); err != nil {
+		return nil, fmt.Errorf("store: allocate issue rank: %w", err)
+	}
+
 	var id string
 	err = tx.QueryRow(ctx, `
-		INSERT INTO issues (organization_id, space_id, number, status_id, type, title, description, priority, assignee_id, reporter_id, due_date)
-		VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5, $6, $7, $8, $9::uuid, $10::uuid, $11::date)
+		INSERT INTO issues (organization_id, space_id, number, status_id, type, title, description, priority, assignee_id, reporter_id, due_date, rank)
+		VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5, $6, $7, $8, $9::uuid, $10::uuid, $11::date, $12)
 		RETURNING id::text`,
-		orgID, spaceID, number, statusID, issueType, title, description, priority, assigneeID, reporterID, dueDate,
+		orgID, spaceID, number, statusID, issueType, title, description, priority, assigneeID, reporterID, dueDate, rank,
 	).Scan(&id)
 	if err != nil {
 		return nil, fmt.Errorf("store: insert issue: %w", err)
@@ -133,7 +141,7 @@ func (db *DB) ListIssues(ctx context.Context, orgID string, f IssueFilter) ([]mo
 	}
 
 	rows, err := db.Pool.Query(ctx,
-		issueSelect+" WHERE "+strings.Join(conds, " AND ")+" ORDER BY i.updated_at DESC", args...,
+		issueSelect+" WHERE "+strings.Join(conds, " AND ")+" ORDER BY i.rank ASC, i.created_at ASC", args...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("store: list issues: %w", err)
@@ -160,8 +168,9 @@ type IssueUpdate struct {
 	StatusID    *string
 	Priority    *string
 	AssigneeID  *string
-	SprintID    *string // "" moves to backlog (NULL)
-	DueDate     *string // "" clears the due date (NULL); otherwise a YYYY-MM-DD date
+	SprintID    *string  // "" moves to backlog (NULL)
+	DueDate     *string  // "" clears the due date (NULL); otherwise a YYYY-MM-DD date
+	Rank        *float64 // fractional sort key within the space
 }
 
 // UpdateIssue applies a partial update and returns the updated issue.
@@ -208,6 +217,9 @@ func (db *DB) UpdateIssue(ctx context.Context, orgID, id string, u IssueUpdate) 
 		} else {
 			add("due_date", "::date", *u.DueDate)
 		}
+	}
+	if u.Rank != nil {
+		add("rank", "", *u.Rank)
 	}
 
 	args = append(args, id)
