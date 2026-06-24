@@ -34,8 +34,8 @@ func testConfig() config.Config {
 	return config.Config{
 		Env:             "test",
 		Port:            "0",
-		CORSOrigin:      "http://localhost:3001",
-		FrontendURL:     "http://localhost:3001",
+		CORSOrigin:      "http://localhost:3000",
+		FrontendURL:     "http://localhost:3000",
 		AppBaseURL:      "http://localhost:8000",
 		JWTSecret:       "test-secret-key-for-integration-tests-0123456789",
 		AccessTokenTTL:  15 * time.Minute,

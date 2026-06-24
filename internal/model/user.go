@@ -29,3 +29,19 @@ type RefreshToken struct {
 func (t RefreshToken) Active(now time.Time) bool {
 	return t.RevokedAt == nil && now.Before(t.ExpiresAt)
 }
+
+// PasswordResetToken backs the forgot/reset-password flow. Only the hash is
+// stored; the raw token is emailed to the user and never persisted.
+type PasswordResetToken struct {
+	ID        string
+	UserID    string
+	TokenHash string
+	ExpiresAt time.Time
+	UsedAt    *time.Time
+	CreatedAt time.Time
+}
+
+// Active reports whether the token can still be redeemed.
+func (t PasswordResetToken) Active(now time.Time) bool {
+	return t.UsedAt == nil && now.Before(t.ExpiresAt)
+}

@@ -13,6 +13,7 @@ import (
 	"cairn/internal/config"
 	"cairn/internal/email"
 	"cairn/internal/org"
+	"cairn/internal/realtime"
 	"cairn/internal/store"
 	"cairn/internal/work"
 )
@@ -26,6 +27,8 @@ type Server struct {
 	orgs    *org.Service
 	billing *billing.Service
 	work    *work.Service
+	mailer  *email.Sender
+	rt      realtime.Broadcaster
 }
 
 // NewServer constructs a Server with its dependencies.
@@ -39,6 +42,8 @@ func NewServer(db *store.DB, cfg config.Config) *Server {
 		orgs:    org.NewService(db, mailer, cfg.FrontendURL, cfg.InviteTTL),
 		billing: billing.NewService(db, cfg.DefaultPricePerSeatCents, cfg.DefaultCurrency),
 		work:    work.NewService(db),
+		mailer:  mailer,
+		rt:      realtime.NoopBroadcaster{},
 	}
 }
 
@@ -66,6 +71,8 @@ func (s *Server) Router() http.Handler {
 			r.Post("/login", s.handleLogin)
 			r.Post("/refresh", s.handleRefresh)
 			r.Post("/logout", s.handleLogout)
+			r.Post("/forgot-password", s.handleForgotPassword)
+			r.Post("/reset-password", s.handleResetPassword)
 
 			// SSO (Google / Microsoft)
 			r.Get("/oauth/{provider}", s.handleOAuthLogin)
@@ -126,6 +133,11 @@ func (s *Server) Router() http.Handler {
 					r.Get("/issues/{issueKey}", s.handleGetIssue)
 					r.Patch("/issues/{issueKey}", s.handleUpdateIssue)
 					r.Delete("/issues/{issueKey}", s.handleDeleteIssue)
+
+					r.Get("/issues/{issueKey}/comments", s.handleListComments)
+					r.Post("/issues/{issueKey}/comments", s.handleCreateComment)
+					r.Patch("/comments/{commentID}", s.handleUpdateComment)
+					r.Delete("/comments/{commentID}", s.handleDeleteComment)
 
 					// Documents (space pages & live docs)
 					r.Get("/spaces/{spaceKey}/documents", s.handleListDocuments)

@@ -20,6 +20,7 @@ var (
 	ErrInvalidKey    = errors.New("work: key must be 2–10 chars, uppercase letters/digits, starting with a letter")
 	ErrInvalidIssue  = errors.New("work: invalid issue reference")
 	ErrValidation    = errors.New("work: validation failed")
+	ErrForbidden     = errors.New("work: not permitted")
 )
 
 var spaceKeyRe = regexp.MustCompile(`^[A-Z][A-Z0-9]{1,9}$`)

@@ -169,6 +169,68 @@ func (s *Service) Logout(ctx context.Context, rawRefresh string) error {
 	return s.store.RevokeRefreshToken(ctx, hashRefreshToken(rawRefresh))
 }
 
+// passwordResetTTL bounds how long a reset link remains valid.
+const passwordResetTTL = time.Hour
+
+// RequestPasswordReset issues a single-use reset token for the account with the
+// given email and returns the raw token plus the user, so the caller can email
+// the link. If no account matches, it returns ("", nil, nil) — callers respond
+// identically either way to avoid leaking which emails are registered.
+func (s *Service) RequestPasswordReset(ctx context.Context, email string) (string, *model.User, error) {
+	user, err := s.store.GetUserByEmail(ctx, strings.TrimSpace(email))
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return "", nil, nil
+		}
+		return "", nil, err
+	}
+
+	// Reuse the opaque-token helpers: a high-entropy raw token is emailed; only
+	// its SHA-256 hash is stored.
+	raw, err := generateRefreshToken()
+	if err != nil {
+		return "", nil, err
+	}
+	if err := s.store.CreatePasswordResetToken(ctx, user.ID, hashRefreshToken(raw), time.Now().Add(passwordResetTTL)); err != nil {
+		return "", nil, err
+	}
+	return raw, user, nil
+}
+
+// ResetPassword validates a raw reset token and, if it is still active, sets a
+// new password, consumes the token, and revokes the user's existing sessions.
+func (s *Service) ResetPassword(ctx context.Context, rawToken, newPassword string) error {
+	if rawToken == "" {
+		return ErrInvalidToken
+	}
+	hash := hashRefreshToken(rawToken)
+
+	tok, err := s.store.GetPasswordResetToken(ctx, hash)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return ErrInvalidToken
+		}
+		return err
+	}
+	if !tok.Active(time.Now()) {
+		return ErrInvalidToken
+	}
+
+	newHash, err := hashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	if err := s.store.UpdateUserPassword(ctx, tok.UserID, newHash); err != nil {
+		return err
+	}
+	if err := s.store.MarkPasswordResetTokenUsed(ctx, hash); err != nil {
+		return err
+	}
+	// Invalidate existing sessions so a previously issued refresh token can't
+	// outlive the password change.
+	return s.store.RevokeAllRefreshTokensForUser(ctx, tok.UserID)
+}
+
 // issueTokens mints an access token and a persisted refresh token.
 func (s *Service) issueTokens(ctx context.Context, userID, userAgent string) (*TokenPair, error) {
 	now := time.Now()

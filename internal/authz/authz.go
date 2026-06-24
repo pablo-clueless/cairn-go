@@ -31,6 +31,12 @@ const (
 	ActionDocumentCreate Action = "document:create"
 	ActionDocumentUpdate Action = "document:update"
 	ActionDocumentDelete Action = "document:delete"
+
+	// Comments (per-issue collaboration). Author-only edit/delete is enforced in
+	// the work layer on top of these role gates.
+	ActionCommentCreate Action = "comment:create"
+	ActionCommentUpdate Action = "comment:update"
+	ActionCommentDelete Action = "comment:delete"
 )
 
 // roleRank orders roles from least to most privileged.
@@ -63,6 +69,10 @@ var minRank = map[Action]int{
 	ActionDocumentCreate: roleRank[model.RoleMember],
 	ActionDocumentUpdate: roleRank[model.RoleMember],
 	ActionDocumentDelete: roleRank[model.RoleMember],
+
+	ActionCommentCreate: roleRank[model.RoleMember],
+	ActionCommentUpdate: roleRank[model.RoleMember],
+	ActionCommentDelete: roleRank[model.RoleMember],
 }
 
 // Can reports whether a role may perform an action.

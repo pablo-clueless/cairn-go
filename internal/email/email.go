@@ -42,6 +42,19 @@ func (s *Sender) SendInvitation(to, orgName, inviteURL string) error {
 	return s.send(to, subject, body)
 }
 
+// SendPasswordReset sends a password-reset link.
+func (s *Sender) SendPasswordReset(to, resetURL string) error {
+	subject := "Reset your Cairn password"
+	body := fmt.Sprintf(
+		`<p>We received a request to reset your Cairn password.</p>`+
+			`<p><a href="%s">Choose a new password</a></p>`+
+			`<p>If the link doesn't work, paste this URL into your browser:<br>%s</p>`+
+			`<p>This link expires in 1 hour. If you didn't request a reset, you can safely ignore this email.</p>`,
+		resetURL, resetURL,
+	)
+	return s.send(to, subject, body)
+}
+
 func (s *Sender) send(to, subject, htmlBody string) error {
 	from := s.cfg.From
 	if from == "" {
