@@ -62,7 +62,7 @@ func Load() (Config, error) {
 		Env:         getEnv("APP_ENV", "development"),
 		Port:        getEnv("PORT", "8000"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
-		CORSOrigin:  getEnv("CORS_ORIGIN", "http://localhost:3000"),
+		CORSOrigin:  getEnv("CORS_ORIGIN", "http://localhost:3001"),
 	}
 
 	if cfg.DatabaseURL == "" {
