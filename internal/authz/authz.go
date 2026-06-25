@@ -37,6 +37,11 @@ const (
 	ActionCommentCreate Action = "comment:create"
 	ActionCommentUpdate Action = "comment:update"
 	ActionCommentDelete Action = "comment:delete"
+
+	// Attachments (per-issue files). Uploader-or-admin delete is enforced in the
+	// work layer on top of these role gates.
+	ActionAttachmentCreate Action = "attachment:create"
+	ActionAttachmentDelete Action = "attachment:delete"
 )
 
 // roleRank orders roles from least to most privileged.
@@ -73,6 +78,9 @@ var minRank = map[Action]int{
 	ActionCommentCreate: roleRank[model.RoleMember],
 	ActionCommentUpdate: roleRank[model.RoleMember],
 	ActionCommentDelete: roleRank[model.RoleMember],
+
+	ActionAttachmentCreate: roleRank[model.RoleMember],
+	ActionAttachmentDelete: roleRank[model.RoleMember],
 }
 
 // Can reports whether a role may perform an action.

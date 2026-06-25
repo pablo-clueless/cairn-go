@@ -32,15 +32,24 @@ var priorities = []string{model.PriorityLowest, model.PriorityLow, model.Priorit
 
 // Service implements space/issue workflows.
 type Service struct {
-	store       *store.DB
-	mailer      *email.Sender
-	frontendURL string
+	store          *store.DB
+	mailer         *email.Sender
+	frontendURL    string
+	attachmentsDir string
+	maxUploadBytes int64
 }
 
 // NewService builds the work service. mailer/frontendURL power notification
 // emails and deep links; both may be zero-valued (emails then no-op/log).
-func NewService(db *store.DB, mailer *email.Sender, frontendURL string) *Service {
-	return &Service{store: db, mailer: mailer, frontendURL: frontendURL}
+// attachmentsDir/maxUploadBytes configure on-disk file attachments.
+func NewService(db *store.DB, mailer *email.Sender, frontendURL, attachmentsDir string, maxUploadBytes int64) *Service {
+	return &Service{
+		store:          db,
+		mailer:         mailer,
+		frontendURL:    frontendURL,
+		attachmentsDir: attachmentsDir,
+		maxUploadBytes: maxUploadBytes,
+	}
 }
 
 // ---- Spaces ----

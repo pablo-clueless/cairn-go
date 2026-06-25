@@ -7,6 +7,7 @@ import (
 
 	"cairn/internal/authz"
 	"cairn/internal/model"
+	"cairn/internal/realtime"
 	"cairn/internal/store"
 	"cairn/internal/work"
 )
@@ -189,6 +190,7 @@ func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
 		writeWorkError(w, err)
 		return
 	}
+	s.rt.EmitToIssue(issue.ID, realtime.EventIssueUpdated, issue)
 	respond(w, http.StatusOK, issue)
 }
 

@@ -9,7 +9,16 @@ const (
 	EventCommentCreated = "comment.created"
 	EventCommentUpdated = "comment.updated"
 	EventCommentDeleted = "comment.deleted"
+
+	EventIssueUpdated = "issue.updated"
+
+	// EventPresence carries the set of users currently in a room.
+	EventPresence = "presence"
 )
+
+// Room name helpers keep room naming consistent between the hub and emitters.
+func IssueRoom(issueID string) string { return "issue:" + issueID }
+func OrgRoom(orgID string) string     { return "org:" + orgID }
 
 // Broadcaster pushes an event with a JSON-serializable payload to a room.
 type Broadcaster interface {

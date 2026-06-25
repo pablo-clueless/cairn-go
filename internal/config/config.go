@@ -29,6 +29,10 @@ type Config struct {
 	// Organizations
 	InviteTTL time.Duration
 
+	// Attachments (local-disk storage)
+	AttachmentsDir     string // directory where uploaded files are stored
+	MaxUploadBytes     int64  // per-file upload cap
+
 	// Billing
 	PlatformAdminEmails      []string // bootstrapped as platform admins at startup
 	DefaultPricePerSeatCents int
@@ -104,6 +108,13 @@ func Load() (Config, error) {
 	if err != nil {
 		return cfg, err
 	}
+
+	cfg.AttachmentsDir = getEnv("ATTACHMENTS_DIR", "./data/attachments")
+	maxMB, err := getInt("MAX_UPLOAD_MB", 25)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.MaxUploadBytes = int64(maxMB) << 20
 
 	cfg.OAuth = OAuthConfig{
 		GoogleClientID:        os.Getenv("GOOGLE_CLIENT_ID"),

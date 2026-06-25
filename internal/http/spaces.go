@@ -57,7 +57,7 @@ func writeWorkError(w http.ResponseWriter, err error) {
 	case errors.Is(err, work.ErrValidation):
 		writeError(w, http.StatusBadRequest, "validation_error", err.Error())
 	case errors.Is(err, work.ErrForbidden):
-		writeError(w, http.StatusForbidden, "forbidden", "you can only modify your own comments")
+		writeError(w, http.StatusForbidden, "forbidden", "you can only modify your own content")
 	default:
 		writeError(w, http.StatusInternalServerError, "internal_error", "something went wrong")
 	}

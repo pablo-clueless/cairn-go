@@ -29,11 +29,13 @@ type Server struct {
 	work    *work.Service
 	mailer  *email.Sender
 	rt      realtime.Broadcaster
+	hub     *realtime.Hub
 }
 
 // NewServer constructs a Server with its dependencies.
 func NewServer(db *store.DB, cfg config.Config) *Server {
 	mailer := email.New(cfg.SMTP)
+	hub := realtime.NewHub(cfg.FrontendURL)
 	return &Server{
 		db:      db,
 		cfg:     cfg,
@@ -41,9 +43,10 @@ func NewServer(db *store.DB, cfg config.Config) *Server {
 		oauth:   auth.NewOAuth(cfg),
 		orgs:    org.NewService(db, mailer, cfg.FrontendURL, cfg.InviteTTL),
 		billing: billing.NewService(db, cfg.DefaultPricePerSeatCents, cfg.DefaultCurrency),
-		work:    work.NewService(db, mailer, cfg.FrontendURL),
+		work:    work.NewService(db, mailer, cfg.FrontendURL, cfg.AttachmentsDir, cfg.MaxUploadBytes),
 		mailer:  mailer,
-		rt:      realtime.NoopBroadcaster{},
+		rt:      hub,
+		hub:     hub,
 	}
 }
 
@@ -59,6 +62,9 @@ func (s *Server) Router() http.Handler {
 
 	// Liveness/readiness probe.
 	r.Get("/healthz", s.handleHealth)
+
+	// Socket.IO realtime endpoint (auth handled inline from the cookie).
+	r.HandleFunc("/socket.io/*", s.handleSocketIO)
 
 	// Interactive API docs at /swagger/index.html.
 	// We generate an OpenAPI 3.1 document, but the Swagger UI bundled with
@@ -166,6 +172,11 @@ func (s *Server) Router() http.Handler {
 					r.Post("/issues/{issueKey}/watchers", s.handleWatchIssue)
 					r.Delete("/issues/{issueKey}/watchers/{userID}", s.handleUnwatchIssue)
 					r.Get("/issues/{issueKey}/activity", s.handleIssueActivity)
+
+					r.Get("/issues/{issueKey}/attachments", s.handleListAttachments)
+					r.Post("/issues/{issueKey}/attachments", s.handleUploadAttachment)
+					r.Get("/attachments/{attachmentID}", s.handleDownloadAttachment)
+					r.Delete("/attachments/{attachmentID}", s.handleDeleteAttachment)
 
 					// Documents (space pages & live docs)
 					r.Get("/spaces/{spaceKey}/documents", s.handleListDocuments)
