@@ -46,6 +46,14 @@ func writeWorkError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "invalid_transition", "invalid sprint status transition")
 	case errors.Is(err, work.ErrInvalidIssueTransition):
 		writeError(w, http.StatusConflict, "invalid_transition", "that status change isn't allowed by the workflow")
+	case errors.Is(err, work.ErrLinkExists):
+		writeError(w, http.StatusConflict, "link_exists", work.ErrLinkExists.Error())
+	case errors.Is(err, work.ErrSelfLink):
+		writeError(w, http.StatusBadRequest, "validation_error", work.ErrSelfLink.Error())
+	case errors.Is(err, work.ErrParentCycle):
+		writeError(w, http.StatusConflict, "parent_cycle", work.ErrParentCycle.Error())
+	case errors.Is(err, work.ErrParentSpace):
+		writeError(w, http.StatusBadRequest, "validation_error", work.ErrParentSpace.Error())
 	case errors.Is(err, work.ErrValidation):
 		writeError(w, http.StatusBadRequest, "validation_error", err.Error())
 	case errors.Is(err, work.ErrForbidden):

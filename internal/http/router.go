@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	httpSwagger "github.com/swaggo/http-swagger/v2"
 
+	"cairn/docs"
 	"cairn/internal/auth"
 	"cairn/internal/billing"
 	"cairn/internal/config"
@@ -41,7 +41,7 @@ func NewServer(db *store.DB, cfg config.Config) *Server {
 		oauth:   auth.NewOAuth(cfg),
 		orgs:    org.NewService(db, mailer, cfg.FrontendURL, cfg.InviteTTL),
 		billing: billing.NewService(db, cfg.DefaultPricePerSeatCents, cfg.DefaultCurrency),
-		work:    work.NewService(db),
+		work:    work.NewService(db, mailer, cfg.FrontendURL),
 		mailer:  mailer,
 		rt:      realtime.NoopBroadcaster{},
 	}
@@ -60,8 +60,19 @@ func (s *Server) Router() http.Handler {
 	// Liveness/readiness probe.
 	r.Get("/healthz", s.handleHealth)
 
-	// Interactive API docs at /swagger/index.html
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
+	// Interactive API docs at /swagger/index.html.
+	// We generate an OpenAPI 3.1 document, but the Swagger UI bundled with
+	// http-swagger/v2 is 3.x and can't render 3.1, and it reads from the swag v1
+	// registry rather than the swag/v2 registry our docs register into. So serve
+	// the spec ourselves and render it with Swagger UI 5 (3.1-capable).
+	r.Get("/swagger/doc.json", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_, _ = w.Write([]byte(docs.SwaggerInfo.ReadDoc()))
+	})
+	r.Get("/swagger/*", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(swaggerUIPage))
+	})
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/health", s.handleHealth)
@@ -85,6 +96,14 @@ func (s *Server) Router() http.Handler {
 
 			r.Get("/me", s.handleMe)
 			r.Patch("/invitations/{token}", s.handleAcceptInvite)
+
+			// Personal notification inbox (cross-org).
+			r.Get("/notifications", s.handleListNotifications)
+			r.Patch("/notifications", s.handleMarkAllRead)
+			r.Get("/notifications/count", s.handleNotificationCount)
+			r.Get("/notifications/preferences", s.handleGetNotificationPrefs)
+			r.Patch("/notifications/preferences", s.handleUpdateNotificationPrefs)
+			r.Patch("/notifications/{id}", s.handleMarkNotificationRead)
 
 			r.Route("/orgs", func(r chi.Router) {
 				r.Post("/", s.handleCreateOrg)
@@ -139,6 +158,15 @@ func (s *Server) Router() http.Handler {
 					r.Patch("/comments/{commentID}", s.handleUpdateComment)
 					r.Delete("/comments/{commentID}", s.handleDeleteComment)
 
+					r.Get("/issues/{issueKey}/links", s.handleListLinks)
+					r.Post("/issues/{issueKey}/links", s.handleCreateLink)
+					r.Delete("/links/{linkID}", s.handleDeleteLink)
+
+					r.Get("/issues/{issueKey}/watchers", s.handleListWatchers)
+					r.Post("/issues/{issueKey}/watchers", s.handleWatchIssue)
+					r.Delete("/issues/{issueKey}/watchers/{userID}", s.handleUnwatchIssue)
+					r.Get("/issues/{issueKey}/activity", s.handleIssueActivity)
+
 					// Documents (space pages & live docs)
 					r.Get("/spaces/{spaceKey}/documents", s.handleListDocuments)
 					r.Post("/spaces/{spaceKey}/documents", s.handleCreateDocument)
@@ -165,3 +193,28 @@ func (s *Server) Router() http.Handler {
 
 	return r
 }
+
+// swaggerUIPage renders the OpenAPI 3.1 document at /swagger/doc.json using
+// Swagger UI 5, which (unlike the 3.x bundle in http-swagger/v2) supports 3.1.
+const swaggerUIPage = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cairn API — Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin></script>
+  <script>
+    window.onload = function () {
+      window.ui = SwaggerUIBundle({
+        url: "/swagger/doc.json",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        persistAuthorization: true,
+      });
+    };
+  </script>
+</body>
+</html>`

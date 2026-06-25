@@ -3,8 +3,8 @@
 dev:        ## Run the API server
 	go run ./cmd/api
 
-docs:       ## Regenerate Swagger docs into ./docs (requires: go install github.com/swaggo/swag/cmd/swag@latest)
-	swag init -g cmd/api/main.go -o docs --parseInternal --parseDependency
+docs:       ## Regenerate OpenAPI 3.1 docs into ./docs (requires: go install github.com/swaggo/swag/v2/cmd/swag@latest)
+	swag init -g cmd/api/main.go -o docs --parseInternal --parseDependency --v3.1
 
 build:      ## Build the API binary into ./bin
 	go build -o bin/cairn ./cmd/api

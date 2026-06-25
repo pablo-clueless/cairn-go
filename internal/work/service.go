@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cairn/internal/email"
 	"cairn/internal/model"
 	"cairn/internal/store"
 )
@@ -31,10 +32,16 @@ var priorities = []string{model.PriorityLowest, model.PriorityLow, model.Priorit
 
 // Service implements space/issue workflows.
 type Service struct {
-	store *store.DB
+	store       *store.DB
+	mailer      *email.Sender
+	frontendURL string
 }
 
-func NewService(db *store.DB) *Service { return &Service{store: db} }
+// NewService builds the work service. mailer/frontendURL power notification
+// emails and deep links; both may be zero-valued (emails then no-op/log).
+func NewService(db *store.DB, mailer *email.Sender, frontendURL string) *Service {
+	return &Service{store: db, mailer: mailer, frontendURL: frontendURL}
+}
 
 // ---- Spaces ----
 
@@ -157,6 +164,12 @@ func (s *Service) CreateIssue(ctx context.Context, orgID, actorID string, in Cre
 		return nil, err
 	}
 	s.audit(ctx, orgID, actorID, "issue.created", "issue", issue.ID, map[string]any{"key": issue.Key, "title": issue.Title})
+	// Reporter and (any) assignee auto-watch the new issue.
+	s.autoWatch(ctx, orgID, issue.ID, actorID)
+	if issue.AssigneeID != nil {
+		s.autoWatch(ctx, orgID, issue.ID, *issue.AssigneeID)
+		s.notifyAssignment(ctx, orgID, actorID, issue, *issue.AssigneeID)
+	}
 	return issue, nil
 }
 
@@ -187,6 +200,11 @@ func (s *Service) UpdateIssue(ctx context.Context, orgID, actorID, issueKey stri
 	if err != nil {
 		return nil, err
 	}
+	if u.ParentID != nil && strings.TrimSpace(*u.ParentID) != "" {
+		if err := s.validateParent(ctx, orgID, existing, strings.TrimSpace(*u.ParentID)); err != nil {
+			return nil, err
+		}
+	}
 	if u.StatusID != nil {
 		ok, err := s.store.StatusInSpace(ctx, *u.StatusID, existing.SpaceID)
 		if err != nil {
@@ -210,7 +228,18 @@ func (s *Service) UpdateIssue(ctx context.Context, orgID, actorID, issueKey stri
 		return nil, err
 	}
 	s.audit(ctx, orgID, actorID, "issue.updated", "issue", updated.ID, nil)
+	// A newly-assigned user auto-watches and is notified — but only when the
+	// assignee actually changed (avoid re-notifying on unrelated field edits).
+	if u.AssigneeID != nil && *u.AssigneeID != "" && !sameAssignee(existing.AssigneeID, *u.AssigneeID) {
+		s.autoWatch(ctx, orgID, updated.ID, *u.AssigneeID)
+		s.notifyAssignment(ctx, orgID, actorID, updated, *u.AssigneeID)
+	}
 	return updated, nil
+}
+
+// sameAssignee reports whether the existing assignee equals the new id.
+func sameAssignee(existing *string, next string) bool {
+	return existing != nil && *existing == next
 }
 
 func (s *Service) DeleteIssue(ctx context.Context, orgID, actorID, issueKey string) error {

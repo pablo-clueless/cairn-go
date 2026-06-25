@@ -23,6 +23,10 @@ func (s *Service) CreateComment(ctx context.Context, orgID, actorID, issueKey, b
 		return nil, err
 	}
 	s.audit(ctx, orgID, actorID, "comment.created", "comment", cm.ID, map[string]any{"issue_id": issue.ID})
+	// Commenting subscribes the author to the issue's activity.
+	s.autoWatch(ctx, orgID, issue.ID, actorID)
+	// Notify @mentioned users and watchers.
+	s.notifyComment(ctx, orgID, actorID, issue, body)
 	return cm, nil
 }
 
@@ -53,6 +57,12 @@ func (s *Service) UpdateComment(ctx context.Context, orgID, actorID, id, body st
 		return nil, err
 	}
 	s.audit(ctx, orgID, actorID, "comment.updated", "comment", cm.ID, nil)
+	// Notify only users newly @mentioned by this edit.
+	if added := newMentions(existing.Body, body); len(added) > 0 {
+		if issue, err := s.store.GetIssueByID(ctx, orgID, existing.IssueID); err == nil {
+			s.notifyMentions(ctx, orgID, actorID, issue, body, added)
+		}
+	}
 	return cm, nil
 }
 

@@ -55,6 +55,17 @@ func (s *Sender) SendPasswordReset(to, resetURL string) error {
 	return s.send(to, subject, body)
 }
 
+// SendNotification sends a generic notification email with a call-to-action link.
+func (s *Sender) SendNotification(to, subject, heading, link, linkLabel string) error {
+	body := fmt.Sprintf(
+		`<p>%s</p>`+
+			`<p><a href="%s">%s</a></p>`+
+			`<p>If the link doesn't work, paste this URL into your browser:<br>%s</p>`,
+		heading, link, linkLabel, link,
+	)
+	return s.send(to, subject, body)
+}
+
 func (s *Sender) send(to, subject, htmlBody string) error {
 	from := s.cfg.From
 	if from == "" {

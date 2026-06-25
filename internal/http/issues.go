@@ -29,6 +29,7 @@ type updateIssueRequest struct {
 	Priority    *string  `json:"priority"`
 	AssigneeID  *string  `json:"assignee_id"`
 	SprintID    *string  `json:"sprint_id"`
+	ParentID    *string  `json:"parent_id"`
 	DueDate     *string  `json:"due_date"`
 	Rank        *float64 `json:"rank"`
 }
@@ -96,6 +97,7 @@ func (s *Server) handleListIssues(w http.ResponseWriter, r *http.Request) {
 	filter := store.IssueFilter{
 		StatusID: r.URL.Query().Get("status"), // a status id
 		Sprint:   r.URL.Query().Get("sprint"), // "backlog" or a sprint id
+		ParentID: r.URL.Query().Get("parent"), // a parent issue id (children of)
 	}
 
 	if assignee := r.URL.Query().Get("assignee"); assignee != "" {
@@ -179,6 +181,7 @@ func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
 		Priority:    req.Priority,
 		AssigneeID:  req.AssigneeID,
 		SprintID:    req.SprintID,
+		ParentID:    req.ParentID,
 		DueDate:     req.DueDate,
 		Rank:        req.Rank,
 	})

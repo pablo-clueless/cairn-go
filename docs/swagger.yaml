@@ -1,577 +1,660 @@
-basePath: /v1
-definitions:
-  cairn_internal_billing.AdminOrgItem:
-    properties:
-      organization:
-        $ref: '#/definitions/cairn_internal_model.Organization'
-      subscription:
-        $ref: '#/definitions/cairn_internal_billing.View'
-    type: object
-  cairn_internal_billing.View:
-    properties:
-      amount_due_cents:
-        type: integer
-      billing_enabled:
-        type: boolean
-      canceled_at:
-        type: string
-      created_at:
-        type: string
-      currency:
-        type: string
-      current_period_end:
-        type: string
-      current_period_start:
-        type: string
-      id:
-        type: string
-      organization_id:
-        type: string
-      plan:
-        type: string
-      price_per_seat_cents:
-        type: integer
-      seats:
-        type: integer
-      status:
-        type: string
-      trial_days:
-        type: integer
-      trial_days_remaining:
-        type: integer
-      trial_ends_at:
-        type: string
-      trial_expired:
-        type: boolean
-      updated_at:
-        type: string
-    type: object
-  cairn_internal_model.Document:
-    properties:
-      content:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
-      organization_id:
-        type: string
-      owner_id:
-        type: string
-      owner_name:
-        type: string
-      parent_id:
-        type: string
-      space_id:
-        type: string
-      status:
-        type: string
-      title:
-        type: string
-      type:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  cairn_internal_model.Invitation:
-    properties:
-      accepted_at:
-        type: string
-      created_at:
-        type: string
-      email:
-        type: string
-      expires_at:
-        type: string
-      id:
-        type: string
-      invited_by:
-        type: string
-      organization_id:
-        type: string
-      role:
-        type: string
-    type: object
-  cairn_internal_model.Issue:
-    properties:
-      assignee_id:
-        type: string
-      assignee_name:
-        type: string
-      created_at:
-        type: string
-      description:
-        type: string
-      due_date:
-        type: string
-      id:
-        type: string
-      key:
-        description: e.g. "ENG-123"
-        type: string
-      number:
-        type: integer
-      organization_id:
-        type: string
-      priority:
-        type: string
-      rank:
-        description: fractional sort key within the space
-        type: number
-      reporter_id:
-        type: string
-      reporter_name:
-        type: string
-      space_id:
-        type: string
-      space_key:
-        type: string
-      sprint_id:
-        type: string
-      status:
-        description: status name, e.g. "To Do"
-        type: string
-      status_category:
-        description: todo | in_progress | done
-        type: string
-      status_id:
-        type: string
-      title:
-        type: string
-      type:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  cairn_internal_model.Member:
-    properties:
-      email:
-        type: string
-      joined_at:
-        type: string
-      name:
-        type: string
-      role:
-        type: string
-      user_id:
-        type: string
-    type: object
-  cairn_internal_model.Organization:
-    properties:
-      created_at:
-        type: string
-      created_by:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      slug:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  cairn_internal_model.Space:
-    properties:
-      created_at:
-        type: string
-      created_by:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      issue_count:
-        type: integer
-      key:
-        type: string
-      lead_id:
-        type: string
-      name:
-        type: string
-      organization_id:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  cairn_internal_model.Sprint:
-    properties:
-      completed_at:
-        type: string
-      created_at:
-        type: string
-      end_date:
-        type: string
-      goal:
-        type: string
-      id:
-        type: string
-      issue_count:
-        type: integer
-      name:
-        type: string
-      organization_id:
-        type: string
-      space_id:
-        type: string
-      start_date:
-        type: string
-      status:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  cairn_internal_model.StatusTransition:
-    properties:
-      created_at:
-        type: string
-      from_status_id:
-        description: null = from any status
-        type: string
-      id:
-        type: string
-      organization_id:
-        type: string
-      space_id:
-        type: string
-      to_status_id:
-        type: string
-    type: object
-  cairn_internal_model.WorkflowStatus:
-    properties:
-      category:
-        type: string
-      color:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      organization_id:
-        type: string
-      position:
-        type: integer
-      space_id:
-        type: string
-      updated_at:
-        type: string
-      wip_limit:
-        description: 0 = no limit
-        type: integer
-    type: object
-  internal_http.acceptInviteRequest:
-    properties:
-      status:
-        description: must be "accepted"
-        type: string
-    type: object
-  internal_http.appSettingsDTO:
-    properties:
-      default_trial_days:
-        type: integer
-      updated_at:
-        type: string
-    type: object
-  internal_http.authResponse:
-    properties:
-      access_token:
-        type: string
-      expires_at:
-        type: string
-      user:
-        $ref: '#/definitions/internal_http.userDTO'
-    type: object
-  internal_http.bulkUpdateStatusItem:
-    properties:
-      category:
-        type: string
-      color:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      position:
-        type: integer
-      wip_limit:
-        type: integer
-    type: object
-  internal_http.bulkUpdateStatusesRequest:
-    properties:
-      statuses:
-        items:
-          $ref: '#/definitions/internal_http.bulkUpdateStatusItem'
-        type: array
-    type: object
-  internal_http.createDocumentRequest:
-    properties:
-      content:
-        type: string
-      parent_id:
-        type: string
-      status:
-        type: string
-      title:
-        type: string
-      type:
-        type: string
-    type: object
-  internal_http.createIssueRequest:
-    properties:
-      assignee_id:
-        type: string
-      description:
-        type: string
-      due_date:
-        type: string
-      priority:
-        type: string
-      status_id:
-        type: string
-      title:
-        type: string
-      type:
-        type: string
-    type: object
-  internal_http.createOrgRequest:
-    properties:
-      billing_enabled:
-        description: |-
-          BillingEnabled starts a subscription/trial for the org. Honored only when
-          the creator is a platform admin; ignored otherwise.
-        type: boolean
-      name:
-        type: string
-    type: object
-  internal_http.createSpaceRequest:
-    properties:
-      description:
-        type: string
-      key:
-        type: string
-      lead_id:
-        type: string
-      name:
-        type: string
-    type: object
-  internal_http.createSprintRequest:
-    properties:
-      end_date:
-        type: string
-      goal:
-        type: string
-      name:
-        type: string
-      start_date:
-        type: string
-    type: object
-  internal_http.createStatusRequest:
-    properties:
-      category:
-        type: string
-      color:
-        type: string
-      name:
-        type: string
-    type: object
-  internal_http.errorEnvelope:
-    properties:
-      error:
-        type: string
-      message:
-        type: string
-      status:
-        type: integer
-      success:
-        type: boolean
-    type: object
-  internal_http.inviteRequest:
-    properties:
-      email:
-        type: string
-      role:
-        type: string
-    type: object
-  internal_http.inviteResponse:
-    properties:
-      accept_url:
-        type: string
-      invitation:
-        $ref: '#/definitions/cairn_internal_model.Invitation'
-    type: object
-  internal_http.loginRequest:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-    type: object
-  internal_http.orgWithRole:
-    properties:
-      created_at:
-        type: string
-      created_by:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      role:
-        type: string
-      slug:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  internal_http.setTransitionsRequest:
-    properties:
-      transitions:
-        items:
-          $ref: '#/definitions/internal_http.transitionItem'
-        type: array
-    type: object
-  internal_http.signupRequest:
-    properties:
-      email:
-        type: string
-      name:
-        type: string
-      password:
-        type: string
-    type: object
-  internal_http.transitionItem:
-    properties:
-      from_status_id:
-        description: null = from any status
-        type: string
-      to_status_id:
-        type: string
-    type: object
-  internal_http.updateDocumentRequest:
-    properties:
-      content:
-        type: string
-      parent_id:
-        type: string
-      status:
-        type: string
-      title:
-        type: string
-    type: object
-  internal_http.updateIssueRequest:
-    properties:
-      assignee_id:
-        type: string
-      description:
-        type: string
-      due_date:
-        type: string
-      priority:
-        type: string
-      rank:
-        type: number
-      sprint_id:
-        type: string
-      status_id:
-        type: string
-      title:
-        type: string
-      type:
-        type: string
-    type: object
-  internal_http.updateRoleRequest:
-    properties:
-      role:
-        type: string
-    type: object
-  internal_http.updateSettingsRequest:
-    properties:
-      default_trial_days:
-        type: integer
-    type: object
-  internal_http.updateSpaceRequest:
-    properties:
-      description:
-        type: string
-      lead_id:
-        type: string
-      name:
-        type: string
-    type: object
-  internal_http.updateSprintRequest:
-    properties:
-      end_date:
-        type: string
-      goal:
-        type: string
-      name:
-        type: string
-      start_date:
-        type: string
-      status:
-        type: string
-    type: object
-  internal_http.updateStatusRequest:
-    properties:
-      category:
-        type: string
-      color:
-        type: string
-      name:
-        type: string
-      position:
-        type: integer
-      wip_limit:
-        type: integer
-    type: object
-  internal_http.updateSubscriptionRequest:
-    properties:
-      billing_enabled:
-        type: boolean
-      currency:
-        type: string
-      price_per_seat_cents:
-        type: integer
-      status:
-        type: string
-      trial_days:
-        type: integer
-    type: object
-  internal_http.userDTO:
-    properties:
-      created_at:
-        type: string
-      default_org_slug:
-        type: string
-      email:
-        type: string
-      id:
-        type: string
-      is_platform_admin:
-        type: boolean
-      name:
-        type: string
-    type: object
-host: localhost:8000
+components:
+  schemas:
+    cairn_internal_billing.AdminOrgItem:
+      properties:
+        organization:
+          $ref: '#/components/schemas/cairn_internal_model.Organization'
+        subscription:
+          $ref: '#/components/schemas/cairn_internal_billing.View'
+      type: object
+    cairn_internal_billing.View:
+      properties:
+        amount_due_cents:
+          type: integer
+        billing_enabled:
+          type: boolean
+        canceled_at:
+          type: string
+        created_at:
+          type: string
+        currency:
+          type: string
+        current_period_end:
+          type: string
+        current_period_start:
+          type: string
+        id:
+          type: string
+        organization_id:
+          type: string
+        plan:
+          type: string
+        price_per_seat_cents:
+          type: integer
+        seats:
+          type: integer
+        status:
+          type: string
+        trial_days:
+          type: integer
+        trial_days_remaining:
+          type: integer
+        trial_ends_at:
+          type: string
+        trial_expired:
+          type: boolean
+        updated_at:
+          type: string
+      type: object
+    cairn_internal_model.Comment:
+      properties:
+        author_id:
+          type: string
+        author_name:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: string
+        id:
+          type: string
+        issue_id:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    cairn_internal_model.Document:
+      properties:
+        content:
+          type: string
+        created_at:
+          type: string
+        id:
+          type: string
+        organization_id:
+          type: string
+        owner_id:
+          type: string
+        owner_name:
+          type: string
+        parent_id:
+          type: string
+        space_id:
+          type: string
+        status:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    cairn_internal_model.Invitation:
+      properties:
+        accepted_at:
+          type: string
+        created_at:
+          type: string
+        email:
+          type: string
+        expires_at:
+          type: string
+        id:
+          type: string
+        invited_by:
+          type: string
+        organization_id:
+          type: string
+        role:
+          type: string
+      type: object
+    cairn_internal_model.Issue:
+      description: the other end of the link
+      properties:
+        assignee_id:
+          type: string
+        assignee_name:
+          type: string
+        created_at:
+          type: string
+        description:
+          type: string
+        due_date:
+          type: string
+        id:
+          type: string
+        key:
+          description: e.g. "ENG-123"
+          type: string
+        number:
+          type: integer
+        organization_id:
+          type: string
+        parent_id:
+          type: string
+        parent_key:
+          description: e.g. "ENG-12", joined for display
+          type: string
+        priority:
+          type: string
+        rank:
+          description: fractional sort key within the space
+          type: number
+        reporter_id:
+          type: string
+        reporter_name:
+          type: string
+        space_id:
+          type: string
+        space_key:
+          type: string
+        sprint_id:
+          type: string
+        status:
+          description: status name, e.g. "To Do"
+          type: string
+        status_category:
+          description: todo | in_progress | done
+          type: string
+        status_id:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    cairn_internal_model.IssueLinkView:
+      properties:
+        direction:
+          description: outward | inward
+          type: string
+        id:
+          type: string
+        issue:
+          $ref: '#/components/schemas/cairn_internal_model.Issue'
+        type:
+          type: string
+      type: object
+    cairn_internal_model.Member:
+      properties:
+        email:
+          type: string
+        joined_at:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        user_id:
+          type: string
+      type: object
+    cairn_internal_model.Organization:
+      properties:
+        created_at:
+          type: string
+        created_by:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    cairn_internal_model.Space:
+      properties:
+        created_at:
+          type: string
+        created_by:
+          type: string
+        description:
+          type: string
+        id:
+          type: string
+        issue_count:
+          type: integer
+        key:
+          type: string
+        lead_id:
+          type: string
+        name:
+          type: string
+        organization_id:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    cairn_internal_model.Sprint:
+      properties:
+        completed_at:
+          type: string
+        created_at:
+          type: string
+        end_date:
+          type: string
+        goal:
+          type: string
+        id:
+          type: string
+        issue_count:
+          type: integer
+        name:
+          type: string
+        organization_id:
+          type: string
+        space_id:
+          type: string
+        start_date:
+          type: string
+        status:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    cairn_internal_model.StatusTransition:
+      properties:
+        created_at:
+          type: string
+        from_status_id:
+          description: null = from any status
+          type: string
+        id:
+          type: string
+        organization_id:
+          type: string
+        space_id:
+          type: string
+        to_status_id:
+          type: string
+      type: object
+    cairn_internal_model.WorkflowStatus:
+      properties:
+        category:
+          type: string
+        color:
+          type: string
+        created_at:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        organization_id:
+          type: string
+        position:
+          type: integer
+        space_id:
+          type: string
+        updated_at:
+          type: string
+        wip_limit:
+          description: 0 = no limit
+          type: integer
+      type: object
+    internal_http.acceptInviteRequest:
+      properties:
+        status:
+          description: must be "accepted"
+          type: string
+      type: object
+    internal_http.appSettingsDTO:
+      properties:
+        default_trial_days:
+          type: integer
+        updated_at:
+          type: string
+      type: object
+    internal_http.authResponse:
+      properties:
+        access_token:
+          type: string
+        expires_at:
+          type: string
+        user:
+          $ref: '#/components/schemas/internal_http.userDTO'
+      type: object
+    internal_http.bulkUpdateStatusItem:
+      properties:
+        category:
+          type: string
+        color:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+        wip_limit:
+          type: integer
+      type: object
+    internal_http.bulkUpdateStatusesRequest:
+      properties:
+        statuses:
+          items:
+            $ref: '#/components/schemas/internal_http.bulkUpdateStatusItem'
+          type: array
+          uniqueItems: false
+      type: object
+    internal_http.commentBody:
+      properties:
+        body:
+          type: string
+      type: object
+    internal_http.createDocumentRequest:
+      properties:
+        content:
+          type: string
+        parent_id:
+          type: string
+        status:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+      type: object
+    internal_http.createIssueRequest:
+      properties:
+        assignee_id:
+          type: string
+        description:
+          type: string
+        due_date:
+          type: string
+        priority:
+          type: string
+        status_id:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+      type: object
+    internal_http.createLinkRequest:
+      properties:
+        target_key:
+          description: the other issue, e.g. "ENG-12"
+          type: string
+        type:
+          description: blocks | relates_to | duplicates
+          type: string
+      type: object
+    internal_http.createOrgRequest:
+      properties:
+        billing_enabled:
+          description: |-
+            BillingEnabled starts a subscription/trial for the org. Honored only when
+            the creator is a platform admin; ignored otherwise.
+          type: boolean
+        name:
+          type: string
+      type: object
+    internal_http.createSpaceRequest:
+      properties:
+        description:
+          type: string
+        key:
+          type: string
+        lead_id:
+          type: string
+        name:
+          type: string
+      type: object
+    internal_http.createSprintRequest:
+      properties:
+        end_date:
+          type: string
+        goal:
+          type: string
+        name:
+          type: string
+        start_date:
+          type: string
+      type: object
+    internal_http.createStatusRequest:
+      properties:
+        category:
+          type: string
+        color:
+          type: string
+        name:
+          type: string
+      type: object
+    internal_http.errorEnvelope:
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        status:
+          type: integer
+        success:
+          type: boolean
+      type: object
+    internal_http.forgotPasswordRequest:
+      properties:
+        email:
+          type: string
+      type: object
+    internal_http.inviteRequest:
+      properties:
+        email:
+          type: string
+        role:
+          type: string
+      type: object
+    internal_http.inviteResponse:
+      properties:
+        accept_url:
+          type: string
+        invitation:
+          $ref: '#/components/schemas/cairn_internal_model.Invitation'
+      type: object
+    internal_http.loginRequest:
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      type: object
+    internal_http.orgWithRole:
+      properties:
+        created_at:
+          type: string
+        created_by:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        slug:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    internal_http.resetPasswordRequest:
+      properties:
+        password:
+          type: string
+        token:
+          type: string
+      type: object
+    internal_http.setTransitionsRequest:
+      properties:
+        transitions:
+          items:
+            $ref: '#/components/schemas/internal_http.transitionItem'
+          type: array
+          uniqueItems: false
+      type: object
+    internal_http.signupRequest:
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        password:
+          type: string
+      type: object
+    internal_http.successEnvelope:
+      properties:
+        data: {}
+        message:
+          type: string
+        status:
+          type: integer
+        success:
+          type: boolean
+      type: object
+    internal_http.transitionItem:
+      properties:
+        from_status_id:
+          description: null = from any status
+          type: string
+        to_status_id:
+          type: string
+      type: object
+    internal_http.updateDocumentRequest:
+      properties:
+        content:
+          type: string
+        parent_id:
+          type: string
+        status:
+          type: string
+        title:
+          type: string
+      type: object
+    internal_http.updateIssueRequest:
+      properties:
+        assignee_id:
+          type: string
+        description:
+          type: string
+        due_date:
+          type: string
+        parent_id:
+          type: string
+        priority:
+          type: string
+        rank:
+          type: number
+        sprint_id:
+          type: string
+        status_id:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+      type: object
+    internal_http.updateRoleRequest:
+      properties:
+        role:
+          type: string
+      type: object
+    internal_http.updateSettingsRequest:
+      properties:
+        default_trial_days:
+          type: integer
+      type: object
+    internal_http.updateSpaceRequest:
+      properties:
+        description:
+          type: string
+        lead_id:
+          type: string
+        name:
+          type: string
+      type: object
+    internal_http.updateSprintRequest:
+      properties:
+        end_date:
+          type: string
+        goal:
+          type: string
+        name:
+          type: string
+        start_date:
+          type: string
+        status:
+          type: string
+      type: object
+    internal_http.updateStatusRequest:
+      properties:
+        category:
+          type: string
+        color:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+        wip_limit:
+          type: integer
+      type: object
+    internal_http.updateSubscriptionRequest:
+      properties:
+        billing_enabled:
+          type: boolean
+        currency:
+          type: string
+        price_per_seat_cents:
+          type: integer
+        status:
+          type: string
+        trial_days:
+          type: integer
+      type: object
+    internal_http.userDTO:
+      properties:
+        created_at:
+          type: string
+        default_org_slug:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+        is_platform_admin:
+          type: boolean
+        name:
+          type: string
+      type: object
+  securitySchemes:
+    BearerAuth:
+      description: Type "Bearer" followed by a space and the access token.
+      in: header
+      name: Authorization
+      type: apiKey
+externalDocs:
+  description: ""
+  url: ""
 info:
-  contact: {}
   description: Organization-wide project & issue tracking API (Jira-class, org-scoped).
   title: Cairn API
   version: 0.1.0
+openapi: 3.1.0
 paths:
   /admin/orgs:
     get:
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_billing.AdminOrgItem'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_billing.AdminOrgItem'
-            type: array
       security:
       - BearerAuth: []
       summary: List all organizations (admin)
@@ -584,14 +667,15 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_billing.AdminOrgItem'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_billing.AdminOrgItem'
       security:
       - BearerAuth: []
       summary: Get an org with subscription (admin)
@@ -599,27 +683,31 @@ paths:
       - admin
   /admin/orgs/{orgID}/subscription:
     patch:
-      consumes:
-      - application/json
       parameters:
       - description: Organization ID
         in: path
         name: orgID
         required: true
-        type: string
-      - description: Subscription changes
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.updateSubscriptionRequest'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.updateSubscriptionRequest'
+                description: Subscription changes
+                summary: body
+        description: Subscription changes
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_billing.View'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_billing.View'
       security:
       - BearerAuth: []
       summary: Update an org subscription (admin)
@@ -627,73 +715,108 @@ paths:
       - admin
   /admin/settings:
     get:
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.appSettingsDTO'
           description: OK
-          schema:
-            $ref: '#/definitions/internal_http.appSettingsDTO'
       security:
       - BearerAuth: []
       summary: Get platform settings
       tags:
       - admin
     patch:
-      consumes:
-      - application/json
-      parameters:
-      - description: Settings
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.updateSettingsRequest'
+                description: Settings
+                summary: body
+        description: Settings
         required: true
-        schema:
-          $ref: '#/definitions/internal_http.updateSettingsRequest'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.appSettingsDTO'
           description: OK
-          schema:
-            $ref: '#/definitions/internal_http.appSettingsDTO'
       security:
       - BearerAuth: []
       summary: Update platform settings
       tags:
       - admin
-  /auth/login:
+  /auth/forgot-password:
     post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Login payload
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.forgotPasswordRequest'
+                description: Email to send a reset link to
+                summary: body
+        description: Email to send a reset link to
         required: true
-        schema:
-          $ref: '#/definitions/internal_http.loginRequest'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.successEnvelope'
           description: OK
-          schema:
-            $ref: '#/definitions/internal_http.authResponse'
         "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
+      summary: Request a password reset
+      tags:
+      - auth
+  /auth/login:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.loginRequest'
+                description: Login payload
+                summary: body
+        description: Login payload
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.authResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
+          description: Bad Request
         "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       summary: Log in
       tags:
       - auth
   /auth/logout:
     post:
-      produces:
-      - application/json
       responses:
         "204":
           description: No Content
@@ -708,14 +831,17 @@ paths:
         in: path
         name: provider
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "302":
           description: Found
         "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Not Found
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       summary: Begin SSO login
       tags:
       - auth
@@ -726,15 +852,18 @@ paths:
         in: path
         name: provider
         required: true
-        type: string
+        schema:
+          type: string
       - description: authorization code
         in: query
         name: code
-        type: string
+        schema:
+          type: string
       - description: CSRF state
         in: query
         name: state
-        type: string
+        schema:
+          type: string
       responses:
         "302":
           description: Found
@@ -745,80 +874,125 @@ paths:
     post:
       description: Uses the httpOnly refresh cookie to mint a new access token (and
         rotate the refresh token).
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.authResponse'
           description: OK
-          schema:
-            $ref: '#/definitions/internal_http.authResponse'
         "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       summary: Refresh access token
+      tags:
+      - auth
+  /auth/reset-password:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.resetPasswordRequest'
+                description: Reset token and new password
+                summary: body
+        description: Reset token and new password
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.successEnvelope'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
+          description: Bad Request
+      summary: Reset password with a token
       tags:
       - auth
   /auth/signup:
     post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Signup payload
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.signupRequest'
+                description: Signup payload
+                summary: body
+        description: Signup payload
         required: true
-        schema:
-          $ref: '#/definitions/internal_http.signupRequest'
-      produces:
-      - application/json
       responses:
         "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.authResponse'
           description: Created
-          schema:
-            $ref: '#/definitions/internal_http.authResponse'
         "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
         "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Conflict
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       summary: Register a new user
       tags:
       - auth
   /invitations/{token}:
     patch:
-      consumes:
-      - application/json
       parameters:
       - description: Invitation token
         in: path
         name: token
         required: true
-        type: string
-      - description: Set status to accepted
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.acceptInviteRequest'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.acceptInviteRequest'
+                description: Set status to accepted
+                summary: body
+        description: Set status to accepted
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Organization'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Organization'
         "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       security:
       - BearerAuth: []
       summary: Accept an invitation
@@ -826,17 +1000,19 @@ paths:
       - invitations
   /me:
     get:
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.userDTO'
           description: OK
-          schema:
-            $ref: '#/definitions/internal_http.userDTO'
         "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       security:
       - BearerAuth: []
       summary: Current user
@@ -844,41 +1020,45 @@ paths:
       - auth
   /orgs:
     get:
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.Organization'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.Organization'
-            type: array
       security:
       - BearerAuth: []
       summary: List my organizations
       tags:
       - organizations
     post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Org payload
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.createOrgRequest'
+                description: Org payload
+                summary: body
+        description: Org payload
         required: true
-        schema:
-          $ref: '#/definitions/internal_http.createOrgRequest'
-      produces:
-      - application/json
       responses:
         "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Organization'
           description: Created
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Organization'
         "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       security:
       - BearerAuth: []
       summary: Create organization
@@ -891,54 +1071,121 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.orgWithRole'
           description: OK
-          schema:
-            $ref: '#/definitions/internal_http.orgWithRole'
         "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Not Found
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       security:
       - BearerAuth: []
       summary: Get organization
       tags:
       - organizations
     patch:
-      consumes:
-      - application/json
       parameters:
       - description: Organization ID
         in: path
         name: orgID
         required: true
-        type: string
-      - description: Fields to update
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.createOrgRequest'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.createOrgRequest'
+                description: Fields to update
+                summary: body
+        description: Fields to update
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Organization'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Organization'
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       security:
       - BearerAuth: []
       summary: Update organization
       tags:
       - organizations
+  /orgs/{orgID}/comments/{commentID}:
+    delete:
+      parameters:
+      - description: Organization ID or slug
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Comment ID
+        in: path
+        name: commentID
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete a comment
+      tags:
+      - comments
+    patch:
+      parameters:
+      - description: Organization ID or slug
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Comment ID
+        in: path
+        name: commentID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.commentBody'
+              description: New body
+              summary: body
+        description: New body
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Comment'
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Edit a comment
+      tags:
+      - comments
   /orgs/{orgID}/documents/{docID}:
     delete:
       parameters:
@@ -946,12 +1193,14 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Document ID
         in: path
         name: docID
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "204":
           description: No Content
@@ -966,17 +1215,21 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Document ID
         in: path
         name: docID
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Document'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Document'
       security:
       - BearerAuth: []
       summary: Get document
@@ -988,23 +1241,30 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Document ID
         in: path
         name: docID
         required: true
-        type: string
-      - description: Fields to change
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.updateDocumentRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.updateDocumentRequest'
+              description: Fields to change
+              summary: body
+        description: Fields to change
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Document'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Document'
       security:
       - BearerAuth: []
       summary: Update document
@@ -1017,51 +1277,60 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.Invitation'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.Invitation'
-            type: array
       security:
       - BearerAuth: []
       summary: List pending invitations
       tags:
       - invitations
     post:
-      consumes:
-      - application/json
       parameters:
       - description: Organization ID
         in: path
         name: orgID
         required: true
-        type: string
-      - description: Invite payload
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.inviteRequest'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.inviteRequest'
+                description: Invite payload
+                summary: body
+        description: Invite payload
+        required: true
       responses:
         "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.inviteResponse'
           description: Created
-          schema:
-            $ref: '#/definitions/internal_http.inviteResponse'
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
         "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Conflict
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       security:
       - BearerAuth: []
       summary: Invite a member
@@ -1074,14 +1343,14 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Invitation ID
         in: path
         name: inviteID
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "204":
           description: No Content
@@ -1099,26 +1368,32 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Filter by space key
         in: query
         name: space
-        type: string
+        schema:
+          type: string
       - description: Filter by assignee (me or user id)
         in: query
         name: assignee
-        type: string
+        schema:
+          type: string
       - description: Filter by status
         in: query
         name: status
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.Issue'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.Issue'
-            type: array
       security:
       - BearerAuth: []
       summary: List issues
@@ -1131,12 +1406,14 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Issue key, e.g. ENG-123
         in: path
         name: issueKey
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "204":
           description: No Content
@@ -1151,17 +1428,21 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Issue key, e.g. ENG-123
         in: path
         name: issueKey
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Issue'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Issue'
       security:
       - BearerAuth: []
       summary: Get issue
@@ -1173,26 +1454,184 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Issue key, e.g. ENG-123
         in: path
         name: issueKey
         required: true
-        type: string
-      - description: Fields to change (send empty assignee_id to unassign)
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.updateIssueRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.updateIssueRequest'
+              description: Fields to change (send empty assignee_id to unassign)
+              summary: body
+        description: Fields to change (send empty assignee_id to unassign)
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Issue'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Issue'
       security:
       - BearerAuth: []
       summary: Update issue
+      tags:
+      - issues
+  /orgs/{orgID}/issues/{issueKey}/comments:
+    get:
+      parameters:
+      - description: Organization ID or slug
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Issue key, e.g. ENG-123
+        in: path
+        name: issueKey
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.Comment'
+                type: array
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: List issue comments
+      tags:
+      - comments
+    post:
+      parameters:
+      - description: Organization ID or slug
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Issue key, e.g. ENG-123
+        in: path
+        name: issueKey
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.commentBody'
+              description: Comment body
+              summary: body
+        description: Comment body
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Comment'
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Add a comment
+      tags:
+      - comments
+  /orgs/{orgID}/issues/{issueKey}/links:
+    get:
+      parameters:
+      - description: Organization ID or slug
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Issue key, e.g. ENG-123
+        in: path
+        name: issueKey
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.IssueLinkView'
+                type: array
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: List issue links
+      tags:
+      - issues
+    post:
+      parameters:
+      - description: Organization ID or slug
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Source issue key
+        in: path
+        name: issueKey
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.createLinkRequest'
+              description: Link
+              summary: body
+        description: Link
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.IssueLinkView'
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Link an issue to another
+      tags:
+      - issues
+  /orgs/{orgID}/links/{linkID}:
+    delete:
+      parameters:
+      - description: Organization ID or slug
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Link ID
+        in: path
+        name: linkID
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Remove an issue link
       tags:
       - issues
   /orgs/{orgID}/members:
@@ -1202,16 +1641,17 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.Member'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.Member'
-            type: array
       security:
       - BearerAuth: []
       summary: List members
@@ -1224,55 +1664,62 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: User ID
         in: path
         name: userID
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "204":
           description: No Content
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       security:
       - BearerAuth: []
       summary: Remove member
       tags:
       - members
     patch:
-      consumes:
-      - application/json
       parameters:
       - description: Organization ID
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: User ID
         in: path
         name: userID
         required: true
-        type: string
-      - description: New role
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.updateRoleRequest'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_http.updateRoleRequest'
+                description: New role
+                summary: body
+        description: New role
+        required: true
       responses:
         "204":
           description: No Content
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_http.errorEnvelope'
           description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_http.errorEnvelope'
       security:
       - BearerAuth: []
       summary: Update member role
@@ -1285,14 +1732,17 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.Space'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.Space'
-            type: array
       security:
       - BearerAuth: []
       summary: List spaces
@@ -1304,18 +1754,24 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
-      - description: Space
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.createSpaceRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.createSpaceRequest'
+              description: Space
+              summary: body
+        description: Space
+        required: true
       responses:
         "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Space'
           description: Created
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Space'
       security:
       - BearerAuth: []
       summary: Create space
@@ -1328,12 +1784,14 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "204":
           description: No Content
@@ -1348,17 +1806,21 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Space'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Space'
       security:
       - BearerAuth: []
       summary: Get space
@@ -1370,23 +1832,30 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
-      - description: Fields
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.updateSpaceRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.updateSpaceRequest'
+              description: Fields
+              summary: body
+        description: Fields
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Space'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Space'
       security:
       - BearerAuth: []
       summary: Update space
@@ -1399,19 +1868,23 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.Document'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.Document'
-            type: array
       security:
       - BearerAuth: []
       summary: List documents
@@ -1423,23 +1896,30 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
-      - description: Document
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.createDocumentRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.createDocumentRequest'
+              description: Document
+              summary: body
+        description: Document
+        required: true
       responses:
         "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Document'
           description: Created
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Document'
       security:
       - BearerAuth: []
       summary: Create document
@@ -1452,23 +1932,30 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
-      - description: Issue
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.createIssueRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.createIssueRequest'
+              description: Issue
+              summary: body
+        description: Issue
+        required: true
       responses:
         "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Issue'
           description: Created
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Issue'
       security:
       - BearerAuth: []
       summary: Create issue
@@ -1481,19 +1968,23 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.Sprint'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.Sprint'
-            type: array
       security:
       - BearerAuth: []
       summary: List sprints
@@ -1505,23 +1996,30 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
-      - description: Sprint
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.createSprintRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.createSprintRequest'
+              description: Sprint
+              summary: body
+        description: Sprint
+        required: true
       responses:
         "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Sprint'
           description: Created
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Sprint'
       security:
       - BearerAuth: []
       summary: Create sprint
@@ -1534,19 +2032,23 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.WorkflowStatus'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.WorkflowStatus'
-            type: array
       security:
       - BearerAuth: []
       summary: List workflow statuses
@@ -1560,25 +2062,32 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
-      - description: Statuses to update
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.bulkUpdateStatusesRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.bulkUpdateStatusesRequest'
+              description: Statuses to update
+              summary: body
+        description: Statuses to update
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.WorkflowStatus'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.WorkflowStatus'
-            type: array
       security:
       - BearerAuth: []
       summary: Bulk update workflow statuses
@@ -1590,23 +2099,30 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
-      - description: Status
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.createStatusRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.createStatusRequest'
+              description: Status
+              summary: body
+        description: Status
+        required: true
       responses:
         "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.WorkflowStatus'
           description: Created
-          schema:
-            $ref: '#/definitions/cairn_internal_model.WorkflowStatus'
       security:
       - BearerAuth: []
       summary: Create workflow status
@@ -1621,19 +2137,23 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.StatusTransition'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.StatusTransition'
-            type: array
       security:
       - BearerAuth: []
       summary: List workflow transitions
@@ -1648,25 +2168,32 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Space key
         in: path
         name: spaceKey
         required: true
-        type: string
-      - description: Transitions
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.setTransitionsRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.setTransitionsRequest'
+              description: Transitions
+              summary: body
+        description: Transitions
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/cairn_internal_model.StatusTransition'
+                type: array
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/cairn_internal_model.StatusTransition'
-            type: array
       security:
       - BearerAuth: []
       summary: Replace workflow transitions
@@ -1679,12 +2206,14 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Sprint ID
         in: path
         name: sprintID
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "204":
           description: No Content
@@ -1699,17 +2228,21 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Sprint ID
         in: path
         name: sprintID
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Sprint'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Sprint'
       security:
       - BearerAuth: []
       summary: Get sprint
@@ -1721,23 +2254,30 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Sprint ID
         in: path
         name: sprintID
         required: true
-        type: string
-      - description: Fields / status transition
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.updateSprintRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.updateSprintRequest'
+              description: Fields / status transition
+              summary: body
+        description: Fields / status transition
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.Sprint'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.Sprint'
       security:
       - BearerAuth: []
       summary: Update sprint (edit, start, complete)
@@ -1750,12 +2290,14 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Status ID
         in: path
         name: statusID
         required: true
-        type: string
+        schema:
+          type: string
       responses:
         "204":
           description: No Content
@@ -1770,23 +2312,30 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
+        schema:
+          type: string
       - description: Status ID
         in: path
         name: statusID
         required: true
-        type: string
-      - description: Fields
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/internal_http.updateStatusRequest'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/internal_http.updateStatusRequest'
+              description: Fields
+              summary: body
+        description: Fields
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_model.WorkflowStatus'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_model.WorkflowStatus'
       security:
       - BearerAuth: []
       summary: Update workflow status
@@ -1799,23 +2348,19 @@ paths:
         in: path
         name: orgID
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cairn_internal_billing.View'
           description: OK
-          schema:
-            $ref: '#/definitions/cairn_internal_billing.View'
       security:
       - BearerAuth: []
       summary: Get organization subscription
       tags:
       - billing
-securityDefinitions:
-  BearerAuth:
-    description: Type "Bearer" followed by a space and the access token.
-    in: header
-    name: Authorization
-    type: apiKey
-swagger: "2.0"
+servers:
+- url: localhost:8000/v1

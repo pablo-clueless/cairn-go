@@ -17,18 +17,22 @@ const issueSelect = `
 		(s.key || '-' || i.number) AS key, i.type, i.title, i.description,
 		i.status_id::text, st.name, st.category, i.priority,
 		i.assignee_id::text, ua.name, i.reporter_id::text, ur.name, i.sprint_id::text,
+		i.parent_id::text, CASE WHEN p.id IS NULL THEN NULL ELSE (ps.key || '-' || p.number) END AS parent_key,
 		i.due_date, i.rank, i.created_at, i.updated_at
 	FROM issues i
 	JOIN spaces s ON s.id = i.space_id
 	JOIN workflow_statuses st ON st.id = i.status_id
 	LEFT JOIN users ua ON ua.id = i.assignee_id
-	LEFT JOIN users ur ON ur.id = i.reporter_id`
+	LEFT JOIN users ur ON ur.id = i.reporter_id
+	LEFT JOIN issues p ON p.id = i.parent_id
+	LEFT JOIN spaces ps ON ps.id = p.space_id`
 
 func scanIssue(row pgx.Row) (*model.Issue, error) {
 	is := &model.Issue{}
 	err := row.Scan(&is.ID, &is.OrganizationID, &is.SpaceID, &is.SpaceKey, &is.Number, &is.Key,
 		&is.Type, &is.Title, &is.Description, &is.StatusID, &is.Status, &is.StatusCategory, &is.Priority,
 		&is.AssigneeID, &is.AssigneeName, &is.ReporterID, &is.ReporterName, &is.SprintID,
+		&is.ParentID, &is.ParentKey,
 		&is.DueDate, &is.Rank, &is.CreatedAt, &is.UpdatedAt)
 	return is, err
 }
@@ -115,6 +119,7 @@ type IssueFilter struct {
 	AssigneeID string
 	StatusID   string
 	Sprint     string
+	ParentID   string // matches issues whose parent_id is this issue (children)
 }
 
 // ListIssues returns issues for an org, applying optional filters.
@@ -138,6 +143,10 @@ func (db *DB) ListIssues(ctx context.Context, orgID string, f IssueFilter) ([]mo
 	} else if f.Sprint != "" {
 		args = append(args, f.Sprint)
 		conds = append(conds, fmt.Sprintf("i.sprint_id = $%d::uuid", len(args)))
+	}
+	if f.ParentID != "" {
+		args = append(args, f.ParentID)
+		conds = append(conds, fmt.Sprintf("i.parent_id = $%d::uuid", len(args)))
 	}
 
 	rows, err := db.Pool.Query(ctx,
@@ -169,6 +178,7 @@ type IssueUpdate struct {
 	Priority    *string
 	AssigneeID  *string
 	SprintID    *string  // "" moves to backlog (NULL)
+	ParentID    *string  // "" detaches from parent (NULL); otherwise a parent issue id
 	DueDate     *string  // "" clears the due date (NULL); otherwise a YYYY-MM-DD date
 	Rank        *float64 // fractional sort key within the space
 }
@@ -209,6 +219,13 @@ func (db *DB) UpdateIssue(ctx context.Context, orgID, id string, u IssueUpdate) 
 			sets = append(sets, "sprint_id = NULL")
 		} else {
 			add("sprint_id", "::uuid", *u.SprintID)
+		}
+	}
+	if u.ParentID != nil {
+		if *u.ParentID == "" {
+			sets = append(sets, "parent_id = NULL")
+		} else {
+			add("parent_id", "::uuid", *u.ParentID)
 		}
 	}
 	if u.DueDate != nil {

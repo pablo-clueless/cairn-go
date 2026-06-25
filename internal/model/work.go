@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Issue types.
 const (
@@ -114,10 +117,60 @@ type Issue struct {
 	ReporterID     *string    `json:"reporter_id,omitempty"`
 	ReporterName   *string    `json:"reporter_name,omitempty"`
 	SprintID       *string    `json:"sprint_id,omitempty"`
+	ParentID       *string    `json:"parent_id,omitempty"`
+	ParentKey      *string    `json:"parent_key,omitempty"` // e.g. "ENG-12", joined for display
 	DueDate        *time.Time `json:"due_date,omitempty"`
 	Rank           float64    `json:"rank"` // fractional sort key within the space
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
+}
+
+// Issue link types (lateral relationships). Each link is stored once as a
+// directed row; the inverse is derived for display.
+const (
+	LinkBlocks     = "blocks"
+	LinkRelatesTo  = "relates_to"
+	LinkDuplicates = "duplicates"
+)
+
+// IssueLink is a lateral relationship between two issues. The row is directed
+// (source → target); read APIs surface the inverse to the target side.
+type IssueLink struct {
+	ID            string    `json:"id"`
+	Type          string    `json:"type"`
+	SourceIssueID string    `json:"source_issue_id"`
+	TargetIssueID string    `json:"target_issue_id"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// Watcher is a user subscribed to an issue's activity.
+type Watcher struct {
+	UserID    string    `json:"user_id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// ActivityEvent is an audit event surfaced in an issue's activity feed.
+type ActivityEvent struct {
+	ID         string          `json:"id"`
+	Action     string          `json:"action"`
+	ActorID    *string         `json:"actor_id"`
+	ActorName  *string         `json:"actor_name"`
+	EntityType string          `json:"entity_type"`
+	EntityID   string          `json:"entity_id"`
+	Metadata   json.RawMessage `json:"metadata,omitempty"`
+	CreatedAt  time.Time       `json:"created_at"`
+}
+
+// IssueLinkView is a link as seen from one issue's perspective: Direction is
+// "outward" (this issue is the source) or "inward" (this issue is the target),
+// and Issue is the other end, populated for display.
+type IssueLinkView struct {
+	ID        string `json:"id"`
+	Type      string `json:"type"`
+	Direction string `json:"direction"` // outward | inward
+	Issue     Issue  `json:"issue"`     // the other end of the link
 }
 
 // Document types & statuses.
