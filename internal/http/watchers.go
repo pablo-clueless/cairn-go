@@ -24,6 +24,9 @@ func (s *Server) handleListWatchers(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
+		return
+	}
 	watchers, err := s.work.ListWatchers(r.Context(), scope.Org.ID, chi.URLParam(r, "issueKey"))
 	if err != nil {
 		writeWorkError(w, err)
@@ -50,6 +53,9 @@ func (s *Server) handleWatchIssue(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionCommentCreate) {
 		return
 	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
+		return
+	}
 	user, _ := userFromContext(r.Context())
 	if err := s.work.WatchIssue(r.Context(), scope.Org.ID, chi.URLParam(r, "issueKey"), user.ID); err != nil {
 		writeWorkError(w, err)
@@ -69,6 +75,9 @@ func (s *Server) handleWatchIssue(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleUnwatchIssue(w http.ResponseWriter, r *http.Request) {
 	scope, ok := s.requireOrg(w, r)
 	if !ok {
+		return
+	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
 		return
 	}
 	user, _ := userFromContext(r.Context())
@@ -98,6 +107,9 @@ func (s *Server) handleIssueActivity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionWorkView) {
+		return
+	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
 		return
 	}
 	events, err := s.work.ListActivity(r.Context(), scope.Org.ID, chi.URLParam(r, "issueKey"))

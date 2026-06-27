@@ -66,8 +66,9 @@ type InviteResult struct {
 	AcceptURL  string
 }
 
-// Invite creates an invitation for an email and sends the invite link.
-func (s *Service) Invite(ctx context.Context, org *model.Organization, inviterID, email, role string) (*InviteResult, error) {
+// Invite creates an invitation for an email and sends the invite link. spaceID
+// is optional; when set, accepting the invite also adds the user to that space.
+func (s *Service) Invite(ctx context.Context, org *model.Organization, inviterID, email, role string, spaceID *string) (*InviteResult, error) {
 	email = strings.TrimSpace(email)
 	if email == "" || !strings.Contains(email, "@") {
 		return nil, fmt.Errorf("org: a valid email is required")
@@ -86,7 +87,7 @@ func (s *Service) Invite(ctx context.Context, org *model.Organization, inviterID
 	}
 	expiresAt := time.Now().Add(s.inviteTTL)
 
-	inv, err := s.store.CreateInvitation(ctx, org.ID, email, role, hashToken(rawToken), inviterID, expiresAt)
+	inv, err := s.store.CreateInvitation(ctx, org.ID, email, role, hashToken(rawToken), inviterID, spaceID, expiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +129,12 @@ func (s *Service) Accept(ctx context.Context, user *model.User, rawToken string)
 			return nil, err
 		}
 		// Already a member: treat acceptance as idempotent.
+	}
+	// A space-targeted invite also grants access to that space.
+	if inv.SpaceID != nil {
+		if err := s.store.AddSpaceMember(ctx, inv.OrganizationID, *inv.SpaceID, user.ID); err != nil {
+			return nil, err
+		}
 	}
 	if err := s.store.MarkInvitationAccepted(ctx, inv.ID); err != nil {
 		return nil, err

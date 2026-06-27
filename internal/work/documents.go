@@ -31,9 +31,10 @@ func (s *Service) CreateDocument(ctx context.Context, orgID, actorID string, in 
 		return nil, fmt.Errorf("%w: invalid document type", ErrValidation)
 	}
 
-	// Live docs are "always live" (published on create); pages start as drafts.
+	// Live docs and whiteboards are "always live" (published on create); pages
+	// start as drafts.
 	if in.Status == "" {
-		if in.Type == model.DocumentLive {
+		if in.Type == model.DocumentLive || in.Type == model.DocumentWhiteboard {
 			in.Status = model.DocumentPublished
 		} else {
 			in.Status = model.DocumentDraft

@@ -107,7 +107,8 @@ func (s *Server) handleListSpaces(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
-	spaces, err := s.work.ListSpaces(r.Context(), scope.Org.ID)
+	user, _ := userFromContext(r.Context())
+	spaces, err := s.work.ListSpaces(r.Context(), scope.Org.ID, user.ID, isManager(scope.Role))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "could not list spaces")
 		return
@@ -133,9 +134,8 @@ func (s *Server) handleGetSpace(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
-	space, err := s.work.GetSpace(r.Context(), scope.Org.ID, chi.URLParam(r, "spaceKey"))
-	if err != nil {
-		writeWorkError(w, err)
+	space, ok := s.requireSpaceAccess(w, r, scope)
+	if !ok {
 		return
 	}
 	respond(w, http.StatusOK, space)

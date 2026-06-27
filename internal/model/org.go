@@ -45,6 +45,7 @@ type Invitation struct {
 	OrganizationID string     `json:"organization_id"`
 	Email          string     `json:"email"`
 	Role           string     `json:"role"`
+	SpaceID        *string    `json:"space_id,omitempty"` // target space, or nil for an org-only invite
 	TokenHash      string     `json:"-"`
 	InvitedBy      *string    `json:"invited_by,omitempty"`
 	ExpiresAt      time.Time  `json:"expires_at"`

@@ -54,6 +54,9 @@ func (s *Server) handleListStatuses(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
+	if _, ok := s.requireSpaceAccess(w, r, scope); !ok {
+		return
+	}
 	statuses, err := s.work.ListStatuses(r.Context(), scope.Org.ID, chi.URLParam(r, "spaceKey"))
 	if err != nil {
 		writeWorkError(w, err)

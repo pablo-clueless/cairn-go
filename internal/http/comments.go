@@ -29,6 +29,9 @@ func (s *Server) handleListComments(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
+		return
+	}
 	comments, err := s.work.ListComments(r.Context(), scope.Org.ID, chi.URLParam(r, "issueKey"))
 	if err != nil {
 		writeWorkError(w, err)
@@ -54,6 +57,9 @@ func (s *Server) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionCommentCreate) {
+		return
+	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
 		return
 	}
 	user, _ := userFromContext(r.Context())

@@ -131,12 +131,32 @@ func (s *Server) Router() http.Handler {
 
 					r.Get("/subscription", s.handleGetSubscription)
 
+					r.Get("/search", s.handleSearch)
+
+					r.Get("/filters", s.handleListFilters)
+					r.Post("/filters", s.handleCreateFilter)
+					r.Patch("/filters/{filterID}", s.handleUpdateFilter)
+					r.Delete("/filters/{filterID}", s.handleDeleteFilter)
+
+					r.Get("/dashboards", s.handleListDashboards)
+					r.Post("/dashboards", s.handleCreateDashboard)
+					r.Patch("/dashboards/{dashboardID}", s.handleUpdateDashboard)
+					r.Delete("/dashboards/{dashboardID}", s.handleDeleteDashboard)
+
 					// Spaces (projects) & issues
 					r.Get("/spaces", s.handleListSpaces)
 					r.Post("/spaces", s.handleCreateSpace)
 					r.Get("/spaces/{spaceKey}", s.handleGetSpace)
 					r.Patch("/spaces/{spaceKey}", s.handleUpdateSpace)
 					r.Delete("/spaces/{spaceKey}", s.handleDeleteSpace)
+
+					r.Get("/spaces/{spaceKey}/members", s.handleListSpaceMembers)
+					r.Post("/spaces/{spaceKey}/members", s.handleAddSpaceMember)
+					r.Delete("/spaces/{spaceKey}/members/{userID}", s.handleRemoveSpaceMember)
+
+					r.Get("/spaces/{spaceKey}/invitations", s.handleListSpaceInvitations)
+					r.Post("/spaces/{spaceKey}/invitations", s.handleInviteToSpace)
+					r.Delete("/spaces/{spaceKey}/invitations/{inviteID}", s.handleDeleteSpaceInvitation)
 					r.Post("/spaces/{spaceKey}/issues", s.handleCreateIssue)
 
 					r.Get("/spaces/{spaceKey}/statuses", s.handleListStatuses)
@@ -147,6 +167,10 @@ func (s *Server) Router() http.Handler {
 
 					r.Get("/spaces/{spaceKey}/transitions", s.handleListTransitions)
 					r.Put("/spaces/{spaceKey}/transitions", s.handleSetTransitions)
+
+					r.Get("/spaces/{spaceKey}/reports/velocity", s.handleVelocity)
+					r.Get("/spaces/{spaceKey}/reports/burndown", s.handleBurndown)
+					r.Get("/spaces/{spaceKey}/reports/cfd", s.handleCFD)
 
 					r.Get("/spaces/{spaceKey}/sprints", s.handleListSprints)
 					r.Post("/spaces/{spaceKey}/sprints", s.handleCreateSprint)

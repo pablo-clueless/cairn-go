@@ -77,6 +77,15 @@ func (db *DB) CreateIssue(ctx context.Context, orgID, spaceID, statusID, issueTy
 		return nil, fmt.Errorf("store: insert issue: %w", err)
 	}
 
+	// Seed the status history so reports have a starting point for this issue.
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO issue_status_history (organization_id, issue_id, space_id, status_id, category)
+		SELECT $1::uuid, $2::uuid, $3::uuid, st.id, st.category
+		FROM workflow_statuses st WHERE st.id = $4::uuid`,
+		orgID, id, spaceID, statusID); err != nil {
+		return nil, fmt.Errorf("store: seed status history: %w", err)
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("store: commit create issue: %w", err)
 	}
@@ -119,7 +128,8 @@ type IssueFilter struct {
 	AssigneeID string
 	StatusID   string
 	Sprint     string
-	ParentID   string // matches issues whose parent_id is this issue (children)
+	ParentID   string   // matches issues whose parent_id is this issue (children)
+	SpaceIDs   []string // restrict to these spaces (per-space visibility); nil = no restriction
 }
 
 // ListIssues returns issues for an org, applying optional filters.
@@ -148,6 +158,10 @@ func (db *DB) ListIssues(ctx context.Context, orgID string, f IssueFilter) ([]mo
 		args = append(args, f.ParentID)
 		conds = append(conds, fmt.Sprintf("i.parent_id = $%d::uuid", len(args)))
 	}
+	if f.SpaceIDs != nil {
+		args = append(args, f.SpaceIDs)
+		conds = append(conds, fmt.Sprintf("i.space_id = ANY($%d::uuid[])", len(args)))
+	}
 
 	rows, err := db.Pool.Query(ctx,
 		issueSelect+" WHERE "+strings.Join(conds, " AND ")+" ORDER BY i.rank ASC, i.created_at ASC", args...,
@@ -162,6 +176,36 @@ func (db *DB) ListIssues(ctx context.Context, orgID string, f IssueFilter) ([]mo
 		is, err := scanIssue(rows)
 		if err != nil {
 			return nil, fmt.Errorf("store: scan issue: %w", err)
+		}
+		issues = append(issues, *is)
+	}
+	return issues, rows.Err()
+}
+
+// SearchIssues finds issues by full-text (title + description), partial title,
+// or issue-key prefix, ranked by text relevance then recency.
+func (db *DB) SearchIssues(ctx context.Context, orgID, query string, limit int) ([]model.Issue, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	const tsv = `to_tsvector('english', coalesce(i.title,'') || ' ' || coalesce(i.description,''))`
+	rows, err := db.Pool.Query(ctx, issueSelect+`
+		WHERE i.organization_id = $1::uuid AND (
+			`+tsv+` @@ websearch_to_tsquery('english', $2)
+			OR i.title ILIKE '%' || $2 || '%'
+			OR (s.key || '-' || i.number) ILIKE $2 || '%'
+		)
+		ORDER BY ts_rank(`+tsv+`, websearch_to_tsquery('english', $2)) DESC, i.updated_at DESC
+		LIMIT $3`, orgID, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: search issues: %w", err)
+	}
+	defer rows.Close()
+	var issues []model.Issue
+	for rows.Next() {
+		is, err := scanIssue(rows)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan search issue: %w", err)
 		}
 		issues = append(issues, *is)
 	}

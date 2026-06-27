@@ -51,6 +51,9 @@ func (s *Server) handleCreateIssue(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionIssueCreate) {
 		return
 	}
+	if _, ok := s.requireSpaceAccess(w, r, scope); !ok {
+		return
+	}
 	user, _ := userFromContext(r.Context())
 
 	var req createIssueRequest
@@ -117,6 +120,16 @@ func (s *Server) handleListIssues(w http.ResponseWriter, r *http.Request) {
 		filter.SpaceID = space.ID
 	}
 
+	// Members only see issues in spaces they belong to; managers see all.
+	if !isManager(scope.Role) {
+		ids, err := s.work.AccessibleSpaceIDs(r.Context(), scope.Org.ID, user.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "internal_error", "could not resolve spaces")
+			return
+		}
+		filter.SpaceIDs = ids
+	}
+
 	issues, err := s.work.ListIssues(r.Context(), scope.Org.ID, filter)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "could not list issues")
@@ -143,9 +156,8 @@ func (s *Server) handleGetIssue(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
-	issue, err := s.work.GetIssue(r.Context(), scope.Org.ID, chi.URLParam(r, "issueKey"))
-	if err != nil {
-		writeWorkError(w, err)
+	issue, ok := s.requireIssueAccess(w, r, scope)
+	if !ok {
 		return
 	}
 	respond(w, http.StatusOK, issue)
@@ -165,6 +177,9 @@ func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionIssueUpdate) {
+		return
+	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
 		return
 	}
 	user, _ := userFromContext(r.Context())
@@ -207,6 +222,9 @@ func (s *Server) handleDeleteIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionIssueDelete) {
+		return
+	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
 		return
 	}
 	user, _ := userFromContext(r.Context())

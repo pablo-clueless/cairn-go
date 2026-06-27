@@ -41,6 +41,9 @@ func (s *Server) handleListSprints(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
+	if _, ok := s.requireSpaceAccess(w, r, scope); !ok {
+		return
+	}
 	sprints, err := s.work.ListSprints(r.Context(), scope.Org.ID, chi.URLParam(r, "spaceKey"))
 	if err != nil {
 		writeWorkError(w, err)
@@ -66,6 +69,9 @@ func (s *Server) handleCreateSprint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionSprintManage) {
+		return
+	}
+	if _, ok := s.requireSpaceAccess(w, r, scope); !ok {
 		return
 	}
 	user, _ := userFromContext(r.Context())
@@ -103,6 +109,9 @@ func (s *Server) handleGetSprint(w http.ResponseWriter, r *http.Request) {
 		writeWorkError(w, err)
 		return
 	}
+	if !s.requireSpaceAccessID(w, r, scope, sprint.SpaceID) {
+		return
+	}
 	respond(w, http.StatusOK, sprint)
 }
 
@@ -120,6 +129,14 @@ func (s *Server) handleUpdateSprint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionSprintManage) {
+		return
+	}
+	existing, err := s.work.GetSprint(r.Context(), scope.Org.ID, chi.URLParam(r, "sprintID"))
+	if err != nil {
+		writeWorkError(w, err)
+		return
+	}
+	if !s.requireSpaceAccessID(w, r, scope, existing.SpaceID) {
 		return
 	}
 	user, _ := userFromContext(r.Context())
@@ -156,6 +173,14 @@ func (s *Server) handleDeleteSprint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionSprintManage) {
+		return
+	}
+	existing, err := s.work.GetSprint(r.Context(), scope.Org.ID, chi.URLParam(r, "sprintID"))
+	if err != nil {
+		writeWorkError(w, err)
+		return
+	}
+	if !s.requireSpaceAccessID(w, r, scope, existing.SpaceID) {
 		return
 	}
 	user, _ := userFromContext(r.Context())

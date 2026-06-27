@@ -41,6 +41,9 @@ func (s *Server) handleListDocuments(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
+	if _, ok := s.requireSpaceAccess(w, r, scope); !ok {
+		return
+	}
 	docs, err := s.work.ListDocuments(r.Context(), scope.Org.ID, chi.URLParam(r, "spaceKey"))
 	if err != nil {
 		writeWorkError(w, err)
@@ -66,6 +69,9 @@ func (s *Server) handleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionDocumentCreate) {
+		return
+	}
+	if _, ok := s.requireSpaceAccess(w, r, scope); !ok {
 		return
 	}
 	user, _ := userFromContext(r.Context())
@@ -110,6 +116,9 @@ func (s *Server) handleGetDocument(w http.ResponseWriter, r *http.Request) {
 		writeWorkError(w, err)
 		return
 	}
+	if !s.requireSpaceAccessID(w, r, scope, doc.SpaceID) {
+		return
+	}
 	respond(w, http.StatusOK, doc)
 }
 
@@ -127,6 +136,14 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionDocumentUpdate) {
+		return
+	}
+	existing, err := s.work.GetDocument(r.Context(), scope.Org.ID, chi.URLParam(r, "docID"))
+	if err != nil {
+		writeWorkError(w, err)
+		return
+	}
+	if !s.requireSpaceAccessID(w, r, scope, existing.SpaceID) {
 		return
 	}
 	user, _ := userFromContext(r.Context())
@@ -162,6 +179,14 @@ func (s *Server) handleDeleteDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionDocumentDelete) {
+		return
+	}
+	existing, err := s.work.GetDocument(r.Context(), scope.Org.ID, chi.URLParam(r, "docID"))
+	if err != nil {
+		writeWorkError(w, err)
+		return
+	}
+	if !s.requireSpaceAccessID(w, r, scope, existing.SpaceID) {
 		return
 	}
 	user, _ := userFromContext(r.Context())

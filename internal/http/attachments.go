@@ -28,6 +28,9 @@ func (s *Server) handleListAttachments(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
+		return
+	}
 	items, err := s.work.ListAttachments(r.Context(), scope.Org.ID, chi.URLParam(r, "issueKey"))
 	if err != nil {
 		writeWorkError(w, err)
@@ -55,6 +58,9 @@ func (s *Server) handleUploadAttachment(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionAttachmentCreate) {
+		return
+	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
 		return
 	}
 	user, _ := userFromContext(r.Context())
@@ -105,6 +111,16 @@ func (s *Server) handleDownloadAttachment(w http.ResponseWriter, r *http.Request
 		return
 	}
 	defer f.Close()
+
+	// Gate on the attachment's issue space (the route has no space/issue key).
+	issue, err := s.work.GetIssueByID(r.Context(), scope.Org.ID, att.IssueID)
+	if err != nil {
+		writeWorkError(w, err)
+		return
+	}
+	if !s.requireSpaceAccessID(w, r, scope, issue.SpaceID) {
+		return
+	}
 
 	w.Header().Set("Content-Type", att.ContentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(att.SizeBytes, 10))

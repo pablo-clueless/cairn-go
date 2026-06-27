@@ -74,8 +74,13 @@ func (s *Service) CreateSpace(ctx context.Context, orgID, actorID, key, name str
 	return sp, nil
 }
 
-func (s *Service) ListSpaces(ctx context.Context, orgID string) ([]model.Space, error) {
-	return s.store.ListSpaces(ctx, orgID)
+// ListSpaces returns the spaces visible to a user: all spaces for org
+// owners/admins (isManager), otherwise only spaces they're a member of.
+func (s *Service) ListSpaces(ctx context.Context, orgID, userID string, isManager bool) ([]model.Space, error) {
+	if isManager {
+		return s.store.ListSpaces(ctx, orgID)
+	}
+	return s.store.ListSpacesForUser(ctx, orgID, userID)
 }
 
 func (s *Service) GetSpace(ctx context.Context, orgID, key string) (*model.Space, error) {
@@ -186,12 +191,27 @@ func (s *Service) ListIssues(ctx context.Context, orgID string, f store.IssueFil
 	return s.store.ListIssues(ctx, orgID, f)
 }
 
+// SearchIssues runs a relevance-ranked text search across an org's issues. A
+// blank query returns no results.
+func (s *Service) SearchIssues(ctx context.Context, orgID, query string, limit int) ([]model.Issue, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []model.Issue{}, nil
+	}
+	return s.store.SearchIssues(ctx, orgID, query, limit)
+}
+
 func (s *Service) GetIssue(ctx context.Context, orgID, issueKey string) (*model.Issue, error) {
 	spaceKey, number, err := parseIssueKey(issueKey)
 	if err != nil {
 		return nil, err
 	}
 	return s.store.GetIssueByKey(ctx, orgID, spaceKey, number)
+}
+
+// GetIssueByID resolves an issue by its id (used for access checks on sub-resources).
+func (s *Service) GetIssueByID(ctx context.Context, orgID, id string) (*model.Issue, error) {
+	return s.store.GetIssueByID(ctx, orgID, id)
 }
 
 func (s *Service) UpdateIssue(ctx context.Context, orgID, actorID, issueKey string, u store.IssueUpdate) (*model.Issue, error) {
@@ -237,6 +257,12 @@ func (s *Service) UpdateIssue(ctx context.Context, orgID, actorID, issueKey stri
 		return nil, err
 	}
 	s.audit(ctx, orgID, actorID, "issue.updated", "issue", updated.ID, nil)
+	// Append to status history (for burndown/CFD) when the status actually moved.
+	if u.StatusID != nil && *u.StatusID != existing.StatusID {
+		if err := s.store.RecordStatusChange(ctx, orgID, updated.ID, updated.SpaceID, *u.StatusID); err != nil {
+			slog.Error("record status change failed", "issue_id", updated.ID, "error", err)
+		}
+	}
 	// A newly-assigned user auto-watches and is notified — but only when the
 	// assignee actually changed (avoid re-notifying on unrelated field edits).
 	if u.AssigneeID != nil && *u.AssigneeID != "" && !sameAssignee(existing.AssigneeID, *u.AssigneeID) {

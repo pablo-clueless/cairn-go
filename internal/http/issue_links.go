@@ -29,6 +29,9 @@ func (s *Server) handleListLinks(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
+		return
+	}
 	links, err := s.work.ListLinks(r.Context(), scope.Org.ID, chi.URLParam(r, "issueKey"))
 	if err != nil {
 		writeWorkError(w, err)
@@ -54,6 +57,9 @@ func (s *Server) handleCreateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.authorize(w, scope, authz.ActionIssueUpdate) {
+		return
+	}
+	if _, ok := s.requireIssueAccess(w, r, scope); !ok {
 		return
 	}
 	user, _ := userFromContext(r.Context())

@@ -340,7 +340,7 @@ func (s *Server) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := s.orgs.Invite(r.Context(), scope.Org, user.ID, req.Email, req.Role)
+	result, err := s.orgs.Invite(r.Context(), scope.Org, user.ID, req.Email, req.Role, nil)
 	if err != nil {
 		if errors.Is(err, store.ErrInvitePending) {
 			writeError(w, http.StatusConflict, "invite_pending", "a pending invitation already exists for this email")

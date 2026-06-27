@@ -35,6 +35,9 @@ func (s *Server) handleListTransitions(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, scope, authz.ActionWorkView) {
 		return
 	}
+	if _, ok := s.requireSpaceAccess(w, r, scope); !ok {
+		return
+	}
 	transitions, err := s.work.ListTransitions(r.Context(), scope.Org.ID, chi.URLParam(r, "spaceKey"))
 	if err != nil {
 		writeWorkError(w, err)

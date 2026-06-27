@@ -63,6 +63,24 @@ func (db *DB) CreateSpace(ctx context.Context, orgID, key, name string, descript
 		}
 	}
 
+	// The creator (and the lead, if set) get access to the new space.
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO space_members (organization_id, space_id, user_id)
+		VALUES ($1::uuid, $2::uuid, $3::uuid)
+		ON CONFLICT (space_id, user_id) DO NOTHING`,
+		orgID, spaceID, createdBy); err != nil {
+		return nil, fmt.Errorf("store: add creator to space: %w", err)
+	}
+	if leadID != nil && *leadID != "" && *leadID != createdBy {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO space_members (organization_id, space_id, user_id)
+			VALUES ($1::uuid, $2::uuid, $3::uuid)
+			ON CONFLICT (space_id, user_id) DO NOTHING`,
+			orgID, spaceID, *leadID); err != nil {
+			return nil, fmt.Errorf("store: add lead to space: %w", err)
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("store: commit create space: %w", err)
 	}
