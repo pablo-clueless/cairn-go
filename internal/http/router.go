@@ -96,6 +96,10 @@ func (s *Server) Router() http.Handler {
 			r.Get("/oauth/{provider}/callback", s.handleOAuthCallback)
 		})
 
+		// Public invitation preview (no session): the token is the secret, so a
+		// recipient can see which email the invite targets before signing in.
+		r.Get("/invitations/{token}", s.handlePreviewInvitation)
+
 		// Authenticated, org-scoped routes.
 		r.Group(func(r chi.Router) {
 			r.Use(s.authenticate)
@@ -156,6 +160,7 @@ func (s *Server) Router() http.Handler {
 
 					r.Get("/spaces/{spaceKey}/invitations", s.handleListSpaceInvitations)
 					r.Post("/spaces/{spaceKey}/invitations", s.handleInviteToSpace)
+					r.Patch("/spaces/{spaceKey}/invitations/{inviteID}", s.handleResendSpaceInvitation)
 					r.Delete("/spaces/{spaceKey}/invitations/{inviteID}", s.handleDeleteSpaceInvitation)
 					r.Post("/spaces/{spaceKey}/issues", s.handleCreateIssue)
 

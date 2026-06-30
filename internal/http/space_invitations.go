@@ -147,6 +147,60 @@ func (s *Server) handleListSpaceInvitations(w http.ResponseWriter, r *http.Reque
 	respond(w, http.StatusOK, invs)
 }
 
+type resendInviteRequest struct {
+	Status string `json:"status"` // must be "resent"
+}
+
+//	@Summary	Re-send a pending space invitation
+//	@Description	Rotates the invite token (invalidating the old link), extends the expiry, and re-sends the email. Body `{"status":"resent"}`.
+//	@Tags		spaces
+//	@Security	BearerAuth
+//	@Param		orgID		path		string				true	"Organization ID or slug"
+//	@Param		spaceKey	path		string				true	"Space key"
+//	@Param		inviteID	path		string				true	"Invitation ID"
+//	@Param		body		body		resendInviteRequest	true	"Set status to resent"
+//	@Success	200			{object}	spaceInviteResponse
+//	@Router		/orgs/{orgID}/spaces/{spaceKey}/invitations/{inviteID} [patch]
+func (s *Server) handleResendSpaceInvitation(w http.ResponseWriter, r *http.Request) {
+	scope, ok := s.requireOrg(w, r)
+	if !ok {
+		return
+	}
+	if !s.authorize(w, scope, authz.ActionIssueCreate) {
+		return
+	}
+	space, ok := s.requireSpaceAccess(w, r, scope)
+	if !ok {
+		return
+	}
+
+	var req resendInviteRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "could not parse request body")
+		return
+	}
+	if req.Status != "resent" {
+		writeError(w, http.StatusBadRequest, "validation_error", `status must be "resent"`)
+		return
+	}
+
+	result, err := s.orgs.ResendSpaceInvitation(r.Context(), scope.Org, space.ID, chi.URLParam(r, "inviteID"))
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "invitation not found")
+			return
+		}
+		// Token was rotated even if the email failed; report the partial result.
+		if result != nil {
+			respond(w, http.StatusOK, spaceInviteResponse{Status: "invited", Invitation: result.Invitation, AcceptURL: result.AcceptURL})
+			return
+		}
+		writeError(w, http.StatusBadRequest, "invite_failed", err.Error())
+		return
+	}
+	respond(w, http.StatusOK, spaceInviteResponse{Status: "invited", Invitation: result.Invitation, AcceptURL: result.AcceptURL})
+}
+
 //	@Summary	Revoke a pending space invitation
 //	@Tags		spaces
 //	@Security	BearerAuth

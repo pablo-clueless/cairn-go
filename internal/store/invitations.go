@@ -101,6 +101,26 @@ func (db *DB) DeleteSpaceInvitation(ctx context.Context, orgID, spaceID, id stri
 	return nil
 }
 
+// RefreshSpaceInvitation rotates a pending space invitation's token and expiry
+// (used to re-send the invite). Scoped to org+space; ErrNotFound if there is no
+// matching pending invitation. Returns the updated row.
+func (db *DB) RefreshSpaceInvitation(ctx context.Context, orgID, spaceID, id, tokenHash string, expiresAt time.Time) (*model.Invitation, error) {
+	inv, err := scanInvitation(db.Pool.QueryRow(ctx, `
+		UPDATE invitations
+		SET token_hash = $4, expires_at = $5
+		WHERE id = $1::uuid AND organization_id = $2::uuid AND space_id = $3::uuid AND accepted_at IS NULL
+		RETURNING `+invitationColumns,
+		id, orgID, spaceID, tokenHash, expiresAt,
+	))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("store: refresh space invitation: %w", err)
+	}
+	return inv, nil
+}
+
 // MarkInvitationAccepted stamps an invitation as accepted.
 func (db *DB) MarkInvitationAccepted(ctx context.Context, id string) error {
 	_, err := db.Pool.Exec(ctx,

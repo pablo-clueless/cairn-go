@@ -419,6 +419,30 @@ func (s *Server) handleDeleteInvite(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// handlePreviewInvitation returns the recipient-facing details of an invitation
+// identified by its opaque token. Public (no session): the token is the secret,
+// so this lets a recipient see which email the invite targets before logging in.
+//
+//	@Summary	Preview an invitation
+//	@Tags		invitations
+//	@Produce	json
+//	@Param		token	path		string	true	"Invitation token"
+//	@Success	200		{object}	org.InvitePreview
+//	@Failure	400		{object}	errorEnvelope
+//	@Router		/invitations/{token} [get]
+func (s *Server) handlePreviewInvitation(w http.ResponseWriter, r *http.Request) {
+	preview, err := s.orgs.PreviewInvitation(r.Context(), chi.URLParam(r, "token"))
+	if err != nil {
+		if errors.Is(err, org.ErrInvalidInvitation) {
+			writeError(w, http.StatusBadRequest, "invalid_invitation", "invalid or expired invitation")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "could not load invitation")
+		return
+	}
+	respond(w, http.StatusOK, preview)
+}
+
 type acceptInviteRequest struct {
 	Status string `json:"status"` // must be "accepted"
 }

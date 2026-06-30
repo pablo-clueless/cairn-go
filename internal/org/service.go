@@ -100,6 +100,74 @@ func (s *Service) Invite(ctx context.Context, org *model.Organization, inviterID
 	return &InviteResult{Invitation: inv, AcceptURL: acceptURL}, nil
 }
 
+// ResendSpaceInvitation re-issues a pending space invitation: it rotates the
+// token (invalidating any old link), extends the expiry, and re-sends the email.
+func (s *Service) ResendSpaceInvitation(ctx context.Context, org *model.Organization, spaceID, inviteID string) (*InviteResult, error) {
+	rawToken, err := randomToken()
+	if err != nil {
+		return nil, err
+	}
+	expiresAt := time.Now().Add(s.inviteTTL)
+
+	inv, err := s.store.RefreshSpaceInvitation(ctx, org.ID, spaceID, inviteID, hashToken(rawToken), expiresAt)
+	if err != nil {
+		return nil, err
+	}
+
+	acceptURL := fmt.Sprintf("%s/accept-invite?token=%s", strings.TrimRight(s.frontend, "/"), rawToken)
+	if err := s.mailer.SendInvitation(inv.Email, org.Name, acceptURL); err != nil {
+		// The token is already rotated and persisted; surface the send failure
+		// but return the (valid) invite so callers can show the link.
+		return &InviteResult{Invitation: inv, AcceptURL: acceptURL}, fmt.Errorf("org: invite re-issued but email failed: %w", err)
+	}
+	return &InviteResult{Invitation: inv, AcceptURL: acceptURL}, nil
+}
+
+// InvitePreview is the public, recipient-facing view of an invitation, looked up
+// by its opaque token. It deliberately excludes internal identifiers so the
+// accept page can show who the invite is for before the user is authenticated.
+type InvitePreview struct {
+	Email     string    `json:"email"`
+	OrgName   string    `json:"org_name"`
+	Role      string    `json:"role"`
+	ExpiresAt time.Time `json:"expires_at"`
+	Status    string    `json:"status"` // "pending" | "expired" | "accepted"
+}
+
+// PreviewInvitation resolves an invitation by its raw token. The token itself is
+// the bearer of authority, so this needs no authenticated session — it lets a
+// recipient see which email the invite targets before signing in or up.
+func (s *Service) PreviewInvitation(ctx context.Context, rawToken string) (*InvitePreview, error) {
+	if strings.TrimSpace(rawToken) == "" {
+		return nil, ErrInvalidInvitation
+	}
+	inv, err := s.store.GetInvitationByTokenHash(ctx, hashToken(rawToken))
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, ErrInvalidInvitation
+		}
+		return nil, err
+	}
+	organization, err := s.store.GetOrganizationByID(ctx, inv.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	status := "pending"
+	switch {
+	case inv.AcceptedAt != nil:
+		status = "accepted"
+	case !inv.Pending(time.Now()):
+		status = "expired"
+	}
+	return &InvitePreview{
+		Email:     inv.Email,
+		OrgName:   organization.Name,
+		Role:      inv.Role,
+		ExpiresAt: inv.ExpiresAt,
+		Status:    status,
+	}, nil
+}
+
 // Accept validates a raw invite token for the authenticated user and joins them
 // to the organization.
 func (s *Service) Accept(ctx context.Context, user *model.User, rawToken string) (*model.Organization, error) {
